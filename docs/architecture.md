@@ -1,0 +1,50 @@
+# 아키텍처
+
+## 파이프라인
+
+```
+입력(PDF / 매물 텍스트 / 폼)
+  → 파서(등기부, 매물 텍스트)          로컬·결정적 (M2)
+  → facts JSON (정규화, 파싱 신뢰도 포함)
+  → 룰 엔진 evaluateRisk()              순수 함수, rulesetVersion 고정   ← 현재 구현(M1)
+  → 판정·근거·종합 등급(red / yellow / green / inconclusive)
+  → 리포트 렌더러
+        └ (선택) LLM 요약 → 스키마 검증 → 실패 시 템플릿 문장
+```
+
+## 모듈 경계
+
+| 경로           | 책임                                                  | 의존 가능 대상                                         |
+| -------------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| `src/core`     | 타입·스키마, 룰, 엔진, (이후) 파서·대출·필요자금 계산 | 없음 (순수 TS + zod). I/O 모듈과 다른 계층 import 금지 |
+| `src/adapters` | 파일 I/O, 공공API, LLM provider, 저장소               | core                                                   |
+| `src/web`      | Next.js UI·로컬 API (M3)                              | core, adapters                                         |
+| `src/mcp`      | core 함수를 MCP Tool로 노출 (M7)                      | core, adapters                                         |
+| `rules.config` | 임계치·기준값(출처·검증 상태 포함)                    | —                                                      |
+| `tests/golden` | 입력 facts → 기대 판정 회귀 테스트                    | core                                                   |
+
+경계는 `eslint.config.js` 의 `no-restricted-imports` 로 강제한다 (ADR-0003).
+
+## 종합 등급 규칙
+
+1. triggered 룰 중 red가 있으면 **red**
+2. 없고 triggered 룰 중 yellow가 있으면 **yellow**
+3. 없고 판단 보류(unknown) 룰이 있으면 **inconclusive** (Green 아님)
+4. 그 외 **green** — "탐지된 위험 신호 없음"이며 안전 보증이 아니다
+
+정보성 룰(`severity: info`)은 등급에 영향을 주지 않는다.
+
+## 현재 구현된 룰 (ruleset v1)
+
+| ID        | 내용                                                   | 심각도       |
+| --------- | ------------------------------------------------------ | ------------ |
+| R-OWN-01  | 임대인(매도인) ≠ 등기상 소유자 / 공동소유              | red / yellow |
+| R-OWN-02  | 신탁등기(미말소)                                       | red          |
+| R-OWN-03  | 압류·가압류·가처분·경매개시결정·임차권등기명령(미말소) | red          |
+| R-OWN-04  | 단기간 잦은 소유권 이전                                | yellow       |
+| R-MORT-01 | 미말소 근저당 채권최고액 합계                          | info         |
+| R-LTV-01  | (선순위 채권최고액 + 보증금) / 시세                    | yellow / red |
+| R-PRIO-01 | 대항력 기준일 이전 설정 근저당                         | info         |
+| R-TAX-01  | 임대인 체납 확인 요청 체크리스트                       | info         |
+
+임계치는 모두 `provisional`(잠정)이다. 확정 절차는 ROADMAP의 M0 참고.
