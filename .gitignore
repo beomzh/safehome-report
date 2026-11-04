@@ -1,12 +1,33 @@
+# 의존성·빌드 산출물
 node_modules/
 dist/
 coverage/
 .next/
+*.log
+.DS_Store
+
+# 환경 값·시크릿 (실제 값은 로컬 .env 에만 둔다. 예시 파일만 커밋)
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+*.p12
+secrets/
+
+# 로컬 실행 데이터 (분석 이력, 캐시, SQLite)
 data/
-*.log
-.DS_Store
-# 개인정보가 포함된 실제 등기부·재무 자료는 절대 커밋하지 않는다 (마스킹된 샘플만 tests/fixtures 에)
+*.sqlite
+*.sqlite3
+*.db
+
+# 개인정보가 포함된 실제 등기부·재무 자료는 절대 커밋하지 않는다
+# 마스킹한 샘플만 tests/fixtures/masked/ 에 둔다
 local-samples/
+*.pdf
+!tests/fixtures/masked/**/*.pdf
+
+# 에디터·도구 로컬 설정
+.claude/
+.vscode/
+.idea/

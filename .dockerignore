@@ -1,0 +1,23 @@
+# 이미지에 포함하면 안 되는 것 (Dockerfile 추가 시 그대로 적용)
+.env
+.env.*
+!.env.example
+.git
+.github
+node_modules
+dist
+coverage
+.next
+data
+local-samples
+*.pdf
+*.pem
+*.key
+*.sqlite
+*.sqlite3
+*.db
+.claude
+.vscode
+.idea
+tests
+docs

@@ -2,7 +2,7 @@
   "name": "safehome-report",
   "version": "0.1.0",
   "private": true,
-  "description": "전세·매매 계약 전 위험 신호를 로컬에서 점검하는 사내망 전용 설치형 도구",
+  "description": "전세·매매 계약 전 위험 신호를 로컬에서 점검하는 설치형 도구",
   "license": "UNLICENSED",
   "type": "module",
   "engines": {
