@@ -1,0 +1,21 @@
+{
+  "rulesetVersion": 1,
+  "effectiveFrom": "2026-11-04",
+  "minParseConfidence": {
+    "value": 0.8,
+    "status": "provisional",
+    "source": "초기 잠정값. M2 파서 샘플 검증 후 확정"
+  },
+  "ltv": {
+    "cautionAbovePercent": 70,
+    "dangerAbovePercent": 80,
+    "status": "provisional",
+    "source": "PRD v0.2 초안값(70%/80%). M0에서 보증기관 기준 등 공식 자료와 대조 필요"
+  },
+  "frequentTransfer": {
+    "windowMonths": 24,
+    "minCount": 3,
+    "status": "provisional",
+    "source": "초기 잠정값. 도메인 전문가 검토 후 확정"
+  }
+}
