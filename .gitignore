@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.next/
+.env
+.env.*
+!.env.example
+data/
+*.log
+.DS_Store
+# 개인정보가 포함된 실제 등기부·재무 자료는 절대 커밋하지 않는다 (마스킹된 샘플만 tests/fixtures 에)
+local-samples/
