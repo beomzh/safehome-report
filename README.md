@@ -7,7 +7,7 @@
 
 ## 현재 상태
 
-M1(룰 엔진 core) 진행 중. 파서·웹 UI·공공데이터·LLM 연동은 아직 구현 전입니다 → [ROADMAP](docs/ROADMAP.md)
+M1(룰 엔진 core) 완료, M3(웹 UI) 1차 구현. 등기부 PDF 파서·공공데이터·LLM 연동은 아직 구현 전입니다 → [ROADMAP](docs/ROADMAP.md)
 
 ## 원칙
 
@@ -25,17 +25,21 @@ npm install
 npm run check   # typecheck + lint + test
 ```
 
-| 명령                | 설명                         |
-| ------------------- | ---------------------------- |
-| `npm run typecheck` | TypeScript 타입 검사         |
-| `npm run lint`      | ESLint (core 경계 규칙 포함) |
-| `npm test`          | vitest (골든셋 포함)         |
-| `npm run format`    | Prettier 적용                |
+| 명령                          | 설명                                   |
+| ----------------------------- | -------------------------------------- |
+| `npm run dev`                 | 로컬 개발 서버 (http://127.0.0.1:3000) |
+| `npm run build` / `npm start` | 프로덕션 빌드 / 실행                   |
+| `npm run typecheck`           | TypeScript 타입 검사                   |
+| `npm run lint`                | ESLint (core 경계 규칙 포함)           |
+| `npm test`                    | vitest (골든셋 포함)                   |
+| `npm run format`              | Prettier 적용                          |
 
 ## 구조
 
 ```
 src/core/        순수 로직(타입·스키마, 룰, 엔진) — I/O·다른 계층 의존 금지
+src/app/         Next.js 라우트·레이아웃
+src/web/         UI 컴포넌트, 폼→입력 변환, 표시 로직
 src/adapters/    파일 I/O, (예정) 공공API·LLM provider·저장소
 rules.config/    임계치·기준값 (source/status 포함)
 tests/golden/    입력 facts → 기대 판정 회귀 테스트

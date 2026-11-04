@@ -1,7 +1,7 @@
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'coverage', '.next'] },
+  { ignores: ['dist', 'node_modules', 'coverage', '.next', 'next-env.d.ts'] },
   ...tseslint.configs.recommended,
   {
     // core는 순수 로직: 어댑터·웹·MCP·파일시스템에 의존하지 않는다 (docs/adr/0003)

@@ -1,6 +1,12 @@
 import { percent, RULE_VERSION, sumActiveMortgages, unknownResult, useRegistry } from './helpers';
 import type { Rule } from './helpers';
 
+const MARKET_SOURCE_LABEL = {
+  user: '직접 입력',
+  trade_median: '실거래가 기반',
+  official_price: '공시가격 기반',
+} as const;
+
 const won = (n: number) => `${n.toLocaleString('ko-KR')}원`;
 
 /** R-MORT-01: 선순위 근저당 채권최고액 합산 (정보). 말소된 근저당은 제외 */
@@ -53,7 +59,7 @@ export const ltvRatio: Rule = (ctx) => {
   const { cautionAbovePercent, dangerAbovePercent } = ctx.config.ltv;
   const evidence = [
     `(선순위 채권최고액 ${won(prior)} + 보증금 ${won(contract.amount)}) / 시세 ${won(market.estimatedValue)} = ${ratio}%`,
-    `시세 출처: ${market.source}, 신뢰도: ${market.confidence}`,
+    `시세 출처: ${MARKET_SOURCE_LABEL[market.source]}, 신뢰도: ${market.confidence === 'high' ? '높음' : '낮음'}`,
   ];
   if (market.confidence === 'low') evidence.push('시세 신뢰도가 낮아 실제 비율과 차이가 클 수 있음');
 

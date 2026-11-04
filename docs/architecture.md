@@ -18,7 +18,8 @@
 | -------------- | ----------------------------------------------------- | ------------------------------------------------------ |
 | `src/core`     | 타입·스키마, 룰, 엔진, (이후) 파서·대출·필요자금 계산 | 없음 (순수 TS + zod). I/O 모듈과 다른 계층 import 금지 |
 | `src/adapters` | 파일 I/O, 공공API, LLM provider, 저장소               | core                                                   |
-| `src/web`      | Next.js UI·로컬 API (M3)                              | core, adapters                                         |
+| `src/app`      | Next.js 라우트·레이아웃·전역 스타일 (M3)              | `src/web`                                              |
+| `src/web`      | UI 컴포넌트, 폼→입력 변환, 표시 로직 (M3)             | core                                                   |
 | `src/mcp`      | core 함수를 MCP Tool로 노출 (M7)                      | core, adapters                                         |
 | `rules.config` | 임계치·기준값(출처·검증 상태 포함)                    | —                                                      |
 | `tests/golden` | 입력 facts → 기대 판정 회귀 테스트                    | core                                                   |
