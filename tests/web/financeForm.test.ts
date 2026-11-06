@@ -1,0 +1,113 @@
+import { describe, expect, it } from 'vitest';
+import { evaluateAffordability } from '../../src/core';
+import { buildAffordabilityInput, emptyFinanceForm, parsePercent } from '../../src/web/financeForm';
+import type { FinanceFormState } from '../../src/web/financeForm';
+
+const filled = (over: Partial<FinanceFormState> = {}): FinanceFormState => ({
+  ...emptyFinanceForm(),
+  enabled: true,
+  assetsManwon: '20,000',
+  annualIncomeManwon: '6,000',
+  ltvLimitPercent: '70',
+  dsrLimitPercent: '40',
+  annualRatePercent: '4',
+  termYears: '30',
+  ...over,
+});
+const sale = { kind: 'sale' as const, amountWon: 500_000_000 };
+
+describe('parsePercent', () => {
+  it.each([
+    ['70', 70],
+    ['4.5', 4.5],
+    ['0.126', 0.126],
+    ['0', 0],
+    ['100', 100],
+  ])('%s → %d', (raw, value) => {
+    expect(parsePercent(raw)).toEqual({ ok: true, value });
+  });
+  it.each(['', 'abc', '-1', '101', '1.23456', '1,5', '4%'])('거부: %j', (raw) => {
+    expect(parsePercent(raw).ok).toBe(false);
+  });
+});
+
+describe('buildAffordabilityInput', () => {
+  it('만원→원, 년→개월로 변환하고 비워 둔 선택값은 생략한다', () => {
+    const r = buildAffordabilityInput(filled(), sale);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.input.profile).toEqual({
+        assets: 200_000_000,
+        annualIncome: 60_000_000,
+        existingAnnualDebtPayment: 0,
+      });
+      expect(r.input.loan.termMonths).toBe(360);
+      expect(r.input.loan.stressAddPercent).toBe(0);
+      expect(r.input.loan.productCap).toBeUndefined();
+      expect(r.input.downPaymentPercent).toBeUndefined();
+    }
+  });
+
+  it('필수값(자산·소득·LTV·DSR·금리·기간)이 비면 각각 오류', () => {
+    const r = buildAffordabilityInput(emptyFinanceForm(), sale);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.length).toBe(6);
+  });
+
+  it('기본값이 없다: 비율을 0으로 두면 거부, 소수·음수 금액 거부', () => {
+    expect(buildAffordabilityInput(filled({ ltvLimitPercent: '0' }), sale).ok).toBe(false);
+    expect(buildAffordabilityInput(filled({ assetsManwon: '3.5' }), sale).ok).toBe(false);
+    expect(buildAffordabilityInput(filled({ termYears: '0' }), sale).ok).toBe(false);
+    expect(buildAffordabilityInput(filled({ termYears: '51' }), sale).ok).toBe(false);
+  });
+
+  it('담보가치: 매매는 매매가·시세 중 낮은 값', () => {
+    const low = buildAffordabilityInput(filled(), { ...sale, marketWon: 450_000_000 });
+    const high = buildAffordabilityInput(filled(), { ...sale, marketWon: 700_000_000 });
+    expect(low.ok && low.input.collateralValue).toBe(450_000_000);
+    expect(high.ok && high.input.collateralValue).toBe(500_000_000);
+  });
+
+  it('담보가치: 전세는 보증금, 선순위 채권은 차감하지 않는다', () => {
+    const r = buildAffordabilityInput(filled(), {
+      kind: 'jeonse',
+      amountWon: 300_000_000,
+      marketWon: 100_000_000,
+    });
+    expect(r.ok && r.input.collateralValue).toBe(300_000_000);
+    expect(r.ok && r.input.seniorClaims).toBeUndefined();
+  });
+
+  it('부대비용·계약금 비율을 반영한다', () => {
+    const r = buildAffordabilityInput(
+      filled({
+        acquisitionTaxPercent: '1.1',
+        brokerFeePercent: '0.4',
+        registrationCostsManwon: '200',
+        otherCostsManwon: '300',
+        downPaymentPercent: '10',
+      }),
+      sale,
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      const result = evaluateAffordability(r.input);
+      expect(result.fundingBase.totalRequired).toBe(512_500_000); // core 골든셋과 같은 값
+      expect(result.fundingBase.timeline).toEqual({ atContract: 50_000_000, atBalance: 112_500_000 });
+    }
+  });
+
+  it('기존 대출 상환액이 있으면 DSR 한도가 줄어든다', () => {
+    const none = buildAffordabilityInput(filled({ annualIncomeManwon: '3,000' }), sale);
+    const some = buildAffordabilityInput(
+      filled({ annualIncomeManwon: '3,000', existingAnnualDebtManwon: '600' }),
+      sale,
+    );
+    expect(none.ok && some.ok).toBe(true);
+    if (none.ok && some.ok) {
+      expect(evaluateAffordability(some.input).base.byDsr).toBeLessThan(
+        evaluateAffordability(none.input).base.byDsr,
+      );
+    }
+  });
+});
