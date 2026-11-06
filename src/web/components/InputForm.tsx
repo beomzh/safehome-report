@@ -1,6 +1,6 @@
 'use client';
 
-import type { Dispatch, FormEvent, SetStateAction } from 'react';
+import type { Dispatch, FormEvent, ReactNode, SetStateAction } from 'react';
 import { GAP_FLAGS } from '../form';
 import type { FormState, Kind, MarketSource } from '../form';
 
@@ -10,11 +10,13 @@ interface Props {
   errors: string[];
   onSubmit: () => void;
   onReset: () => void;
+  /** 폼 하단(오류 표시 위)에 추가로 렌더링할 섹션 (대출·자금 계획 등) */
+  extra?: ReactNode;
 }
 
 const KIND_LABEL: Record<Kind, string> = { jeonse: '전세', monthly: '월세', sale: '매매' };
 
-export function InputForm({ form, setForm, errors, onSubmit, onReset }: Props) {
+export function InputForm({ form, setForm, errors, onSubmit, onReset, extra }: Props) {
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
   const isSale = form.kind === 'sale';
@@ -263,6 +265,8 @@ export function InputForm({ form, setForm, errors, onSubmit, onReset }: Props) {
           </fieldset>
         </div>
       )}
+
+      {extra}
 
       {errors.length > 0 && (
         <ul className="errors" role="alert">
