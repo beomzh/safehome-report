@@ -1,5 +1,5 @@
-import { estimateMarketValue } from '../../core';
-import type { MarketEstimate, RulesConfig, TradeRecord } from '../../core';
+import { estimateMarketValue, findSimilarComplexes } from '../../core';
+import type { MarketEstimate, RulesConfig, SimilarComplex, TradeRecord } from '../../core';
 import { parseTradeXml, PublicDataError } from './aptTrade';
 import { HOUSING } from './housing';
 import type { HousingType } from './housing';
@@ -123,10 +123,11 @@ export function createTradeService(opts: TradeServiceOptions) {
       targetAreaM2: number;
       complexName?: string;
       config: RulesConfig['marketEstimate'];
-    }): Promise<MarketEstimate & { monthsQueried: number }> {
+    }): Promise<MarketEstimate & { monthsQueried: number; similar: SimilarComplex[] }> {
       const months = monthsToFetch(args.asOf, args.config.windowMonths);
       const batches = await Promise.all(months.map((ym) => fetchMonth(args.lawdCd, ym, args.housing)));
-      const result = estimateMarketValue(batches.flat(), {
+      const all = batches.flat();
+      const result = estimateMarketValue(all, {
         asOf: args.asOf,
         targetAreaM2: args.targetAreaM2,
         areaToleranceM2: args.config.areaToleranceM2,
@@ -134,7 +135,17 @@ export function createTradeService(opts: TradeServiceOptions) {
         minSamples: args.config.minSamples,
         complexName: args.complexName,
       });
-      return { ...result, monthsQueried: months.length };
+      const similar = findSimilarComplexes(all, {
+        asOf: args.asOf,
+        targetAreaM2: args.targetAreaM2,
+        areaToleranceM2: args.config.areaToleranceM2,
+        windowMonths: args.config.windowMonths,
+        minTrades: 2,
+        limit: 5,
+        excludeComplexName: args.complexName,
+        referenceWon: result.market?.estimatedValue,
+      });
+      return { ...result, monthsQueried: months.length, similar };
     },
   };
 }

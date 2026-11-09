@@ -16,6 +16,12 @@ interface LookupResponse {
   minWon: number | null;
   maxWon: number | null;
   windowMonths: number;
+  similar?: {
+    complexName: string;
+    medianWon: number;
+    count: number;
+    diffPercent?: number;
+  }[];
   error?: string;
 }
 
@@ -29,6 +35,7 @@ export function MarketLookup({ form, setForm }: Props) {
   const areaM2 = form.lookupAreaM2;
   const complexName = form.lookupComplexName;
   const [busy, setBusy] = useState(false);
+  const [similar, setSimilar] = useState<NonNullable<LookupResponse['similar']>>([]);
   const [message, setMessage] = useState<{ tone: 'ok' | 'warn' | 'error'; text: string } | null>(null);
 
   const lookup = async () => {
@@ -38,6 +45,7 @@ export function MarketLookup({ form, setForm }: Props) {
       const qs = new URLSearchParams({ housing, lawdCd, areaM2, complexName });
       const res = await fetch(`/api/market?${qs.toString()}`);
       const data = (await res.json()) as LookupResponse;
+      setSimilar(res.ok ? (data.similar ?? []) : []);
       if (!res.ok) {
         setMessage({ tone: 'error', text: data.error ?? '조회에 실패했습니다.' });
         return;
@@ -137,6 +145,25 @@ export function MarketLookup({ form, setForm }: Props) {
         필드로 읽으며 별도 API 활용신청이 필요합니다. 다가구·단독은 면적 기준 조회가 맞지 않아 직접
         입력하세요.
       </p>
+      {similar.length > 0 && (
+        <div className="similar">
+          <h4>같은 지역에서 비슷한 면적으로 거래된 다른 단지 (참고)</h4>
+          <ul className="evidence">
+            {similar.map((c) => (
+              <li key={c.complexName}>
+                {c.complexName}: 중앙값 {formatWon(c.medianWon)} ({c.count}건
+                {c.diffPercent !== undefined &&
+                  `, 조회 시세 대비 ${c.diffPercent > 0 ? '+' : ''}${c.diffPercent}%`}
+                )
+              </li>
+            ))}
+          </ul>
+          <p className="hint">
+            판매 중인 매물이 아니라 최근 실제 거래 사례입니다. 대안 단지를 찾는 출발점으로만 쓰고, 지금 나온
+            매물은 위의 매물 사이트에서 확인하세요.
+          </p>
+        </div>
+      )}
       {message && (
         <p className={message.tone === 'error' ? 'errors' : 'notice'} role="status">
           {message.text}
