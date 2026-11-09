@@ -4,7 +4,15 @@ import { parseAptTradeXml, PublicDataError } from './aptTrade';
 
 const ENDPOINT = 'https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev';
 
+export type AdapterLog = (
+  level: 'debug' | 'warn',
+  event: string,
+  fields: Record<string, string | number | boolean>,
+) => void;
+
 export interface TradeServiceOptions {
+  /** 운영 로그 훅. 키·요청 URL 은 넘기지 않는다 */
+  log?: AdapterLog;
   /** 공공데이터포털 서비스 키. Encoding 키(% 포함)는 그대로, Decoding 키는 인코딩해서 쓴다 */
   apiKey: string;
   fetchFn?: typeof fetch;
@@ -40,6 +48,7 @@ export function createTradeService(opts: TradeServiceOptions) {
   const maxPages = opts.maxPages ?? 20;
   const ttl = opts.cacheTtlMs ?? 6 * 60 * 60 * 1000;
   const now = opts.now ?? Date.now;
+  const log: AdapterLog = opts.log ?? (() => {});
   const key = opts.apiKey.includes('%') ? opts.apiKey : encodeURIComponent(opts.apiKey);
   const cache = new Map<string, { at: number; records: TradeRecord[] }>();
 
@@ -60,6 +69,11 @@ export function createTradeService(opts: TradeServiceOptions) {
         return parseAptTradeXml(await res.text());
       } catch (e) {
         lastError = e;
+        log('warn', 'public_data_retry', {
+          month: dealYmd,
+          attempt: attempt + 1,
+          code: e instanceof PublicDataError ? (e.code ?? 'none') : 'network',
+        });
         if (e instanceof PublicDataError && e.code && NO_RETRY.has(e.code)) throw e;
       }
     }
@@ -69,7 +83,10 @@ export function createTradeService(opts: TradeServiceOptions) {
   async function fetchMonth(lawdCd: string, dealYmd: string): Promise<TradeRecord[]> {
     const cacheKey = `${lawdCd}:${dealYmd}`;
     const hit = cache.get(cacheKey);
-    if (hit && now() - hit.at < ttl) return hit.records;
+    if (hit && now() - hit.at < ttl) {
+      log('debug', 'public_data_cache_hit', { month: dealYmd, records: hit.records.length });
+      return hit.records;
+    }
 
     const records: TradeRecord[] = [];
     let total = Infinity;
@@ -80,6 +97,7 @@ export function createTradeService(opts: TradeServiceOptions) {
       if (parsed.records.length === 0 && parsed.skipped === 0) break;
     }
     cache.set(cacheKey, { at: now(), records });
+    log('debug', 'public_data_month_loaded', { month: dealYmd, records: records.length });
     return records;
   }
 

@@ -13,3 +13,5 @@ export {
   loanAssumptionsSchema,
 } from './types';
 export type { AffordabilityInput, CostAssumptions, FinanceProfile, LoanAssumptions } from './types';
+export { evaluateRequirements, requirementsInputSchema } from './requirements';
+export type { MaxLoanBottleneck, RequirementRow, Requirements, RequirementsInput } from './requirements';

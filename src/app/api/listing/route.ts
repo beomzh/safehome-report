@@ -1,23 +1,36 @@
 import { LlmError } from '../../../adapters/llm/provider';
 import { createLlmFromEnv } from '../../../adapters/llm/openaiCompatible';
 import { extractListing, MAX_LISTING_CHARS, parseListingUrl } from '../../../adapters/llm/listing';
+import { getLogger, newRequestId } from '../../../adapters/log/logger';
 
 export const dynamic = 'force-dynamic';
+
+const TAG = 'LISTING';
 
 /**
  * 매물 설명 텍스트에서 항목을 추출한다 (LLM 사용, 선택 기능).
  * 이 경로로 LLM 서버에 전송되는 것은 사용자가 붙여넣은 매물 설명뿐이다(전화번호·이메일은 제거).
  * 성명·재무 정보·등기부 내용은 받지 않는다. 링크는 읽지 않고 플랫폼·매물 번호 힌트만 해석한다.
+ * 로그에는 요청 번호·소요 시간·글자 수·추출 항목 수만 남기고 매물 텍스트·링크·키는 남기지 않는다.
  */
 export async function POST(request: Request) {
+  const log = getLogger();
+  const req = newRequestId();
+  const started = Date.now();
+
   let llm;
   try {
-    llm = createLlmFromEnv(process.env);
+    llm = createLlmFromEnv(process.env, undefined, (event, fields) => log.warn(TAG, event, fields));
   } catch (e) {
-    console.error('[listing] config error:', e instanceof LlmError ? e.kind : 'unexpected');
+    log.error(TAG, 'config_invalid', {
+      req,
+      status: 503,
+      kind: e instanceof LlmError ? e.kind : 'unexpected',
+    });
     return Response.json({ error: 'LLM 설정이 올바르지 않습니다. .env 를 확인하세요.' }, { status: 503 });
   }
   if (!llm) {
+    log.warn(TAG, 'llm_not_configured', { req, status: 503 });
     return Response.json(
       { error: 'LLM 이 설정되어 있지 않습니다 (.env 의 LLM_PROVIDER). 항목은 직접 입력할 수 있습니다.' },
       { status: 503 },
@@ -28,16 +41,19 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as typeof body;
   } catch {
+    log.warn(TAG, 'bad_request', { req, status: 400, reason: 'invalid_json' });
     return Response.json({ error: '요청 형식이 올바르지 않습니다.' }, { status: 400 });
   }
   const text = typeof body.text === 'string' ? body.text.trim() : '';
   if (text.length < 10) {
+    log.warn(TAG, 'bad_request', { req, status: 400, reason: 'text_too_short', chars: text.length });
     return Response.json(
       { error: '매물 설명 텍스트를 붙여넣어 주세요. (링크만으로는 내용을 읽을 수 없습니다)' },
       { status: 400 },
     );
   }
   if (text.length > MAX_LISTING_CHARS * 2) {
+    log.warn(TAG, 'bad_request', { req, status: 413, reason: 'text_too_long', chars: text.length });
     return Response.json(
       { error: `텍스트가 너무 깁니다. ${MAX_LISTING_CHARS}자 이내로 줄여 주세요.` },
       { status: 413 },
@@ -47,10 +63,25 @@ export async function POST(request: Request) {
   try {
     const fields = await extractListing(llm, text);
     const hint = typeof body.url === 'string' && body.url.trim() ? parseListingUrl(body.url) : null;
+    log.info(TAG, 'extract_ok', {
+      req,
+      status: 200,
+      ms: Date.now() - started,
+      provider: llm.name,
+      chars: text.length,
+      extracted: Object.values(fields).filter((v) => v !== null && !Array.isArray(v)).length,
+      warnings: fields.warnings.length,
+      urlPlatform: hint?.platform ?? 'none',
+    });
     return Response.json({ fields, urlHint: hint, truncated: text.length > MAX_LISTING_CHARS });
   } catch (e) {
     // 매물 텍스트·키·주소는 로그에 남기지 않는다
-    console.error('[listing] extraction failed:', e instanceof LlmError ? e.kind : 'unexpected');
+    log.error(TAG, 'extract_failed', {
+      req,
+      status: 502,
+      ms: Date.now() - started,
+      kind: e instanceof LlmError ? e.kind : 'unexpected',
+    });
     return Response.json(
       { error: e instanceof LlmError ? e.message : '항목 추출에 실패했습니다.' },
       { status: 502 },

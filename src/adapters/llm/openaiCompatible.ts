@@ -14,6 +14,8 @@ export interface OpenAiCompatibleOptions {
   /** 네트워크·5xx·429·형식 오류 시 재시도 횟수 */
   retries?: number;
   sleep?: (ms: number) => Promise<void>;
+  /** 재시도 같은 운영 이벤트 로그 훅. 주소·키·모델명·입출력은 넘기지 않는다 */
+  log?: (event: string, fields: Record<string, string | number>) => void;
 }
 
 /** URL 끝부분으로 API 형식을 판별한다. 루트만 주어지면 chat/completions 를 붙인다 */
@@ -88,7 +90,10 @@ export function createOpenAiCompatibleProvider(opts: OpenAiCompatibleOptions): L
 
       let lastError: LlmError = new LlmError('LLM 호출에 실패했습니다', 'http');
       for (let attempt = 0; attempt <= retries; attempt++) {
-        if (attempt > 0) await sleep(400 * attempt);
+        if (attempt > 0) {
+          opts.log?.('llm_retry', { attempt, previous: lastError.kind });
+          await sleep(400 * attempt);
+        }
         try {
           const res = await fetchFn(url, {
             method: 'POST',
@@ -138,6 +143,7 @@ export function createOpenAiCompatibleProvider(opts: OpenAiCompatibleOptions): L
 export function createLlmFromEnv(
   env: Record<string, string | undefined>,
   fetchFn?: typeof fetch,
+  log?: OpenAiCompatibleOptions['log'],
 ): LlmProvider | undefined {
   const provider = (env.LLM_PROVIDER ?? 'none').trim();
   if (provider === '' || provider === 'none') return undefined;
@@ -153,6 +159,7 @@ export function createLlmFromEnv(
     apiKey,
     model,
     fetchFn,
+    log,
     timeoutMs: Number(env.LLM_TIMEOUT_MS) || undefined,
   });
 }

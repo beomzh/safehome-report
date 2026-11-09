@@ -1,3 +1,17 @@
+[2026-11-09 21:10]
+- [Added] - src/adapters/log/logger.ts `createLogger` `getLogger`: 한 줄 JSON 구조화 로그. 성명·금액·텍스트·키 등 금지 이름의 필드는 값을 남기지 않고, 알려진 시크릿 값은 가리며, 문자열은 200자로 제한
+- [Changed] - src/app/api/market/route.ts, src/app/api/listing/route.ts: 성공·실패·잘못된 요청마다 요청 번호·소요 시간·건수·결과·오류 종류를 로그로 남김 (매물 텍스트·단지명·링크·키는 미포함)
+- [Changed] - src/adapters/public-data/tradeService.ts, src/adapters/llm/openaiCompatible.ts: 재시도·캐시 적중 등 운영 이벤트 로그 훅 추가 (키·URL·모델명 미전달)
+- [Changed] - docker-compose.yml, .env.example: 로그 회전(10MB×3), LOG_LEVEL 설명 추가
+- [Added] - tests/log/*.test.ts: 로거 금지 필드·시크릿 가림·레벨, 어댑터 로그 훅 비식별 테스트 8건
+- [Added] - src/core/finance/requirements.ts `evaluateRequirements`: 이 가격이면 최대 대출·필요 자기자금·월 상환액·필요 연소득(DSR, 스트레스 포함)을 대출 비율별로 역산. 자산·소득 없이 대출 기준값만으로 계산
+- [Changed] - src/core/finance/affordability.ts `requiredFundItems`: 입력 타입을 필요한 필드만으로 완화해 역산에서 재사용
+- [Added] - src/web/financeForm.ts `buildFinancePlan`: 자산·소득을 선택 입력으로 하고(하나만 입력하면 오류) 필요 조건과 내 상황 판정 입력을 함께 생성
+- [Added] - src/web/components/RequirementsReport.tsx: "이 매물에 필요한 조건" 표(대출 최대 요약, 총 필요 자금, 대출 비율별 자기자금·월 상환·필요 연소득)
+- [Changed] - src/web/components/FinanceFields.tsx, Analyzer.tsx: 자산·소득 선택 입력, 예시 값 채우기 버튼(공식 값 아님 명시), 결과에 필요 조건 섹션 연결
+- [Added] - tests/golden/requirements.test.ts, tests/web/financeForm.test.ts: 역산 값·단조성·정방향 일치·병목·검증 12건과 변환 5건
+- [Changed] - docs/ADR-0007, docs/ROADMAP.md, README.md: 필요 조건 역산과 예시 버튼 결정, 로그 보는 법 문서화
+
 [2026-11-09 19:20]
 - [Added] - src/web/loans.ts `LOAN_PRODUCTS` `loansFor`: 계약 유형별 대출 상품 종류(버팀목·청년전용·신혼·신생아·시중은행 전세·월세 관련·디딤돌·보금자리론·시중은행 주담대)와 매물 점검 연계 확인 포인트. 한도·금리·소득 기준 같은 낡기 쉬운 숫자는 담지 않음
 - [Added] - src/web/components/LoanCatalog.tsx: 분석 결과 아래에 대출 종류 카드 표시, 위험·주의 등급의 전세 매물에는 보증 거절·한도 축소 가능성 경고
