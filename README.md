@@ -34,6 +34,25 @@ npm run check   # typecheck + lint + test
 | `npm test`                    | vitest (골든셋 포함)                   |
 | `npm run format`              | Prettier 적용                          |
 
+## Docker로 실행
+
+Docker Desktop(또는 Docker Engine + Compose v2)이 필요합니다.
+
+```bash
+docker compose up -d --build
+```
+
+브라우저에서 http://127.0.0.1:3000 을 엽니다. 포트는 내 PC(127.0.0.1)에만 열립니다.
+
+```bash
+docker compose down        # 중지
+docker compose logs -f web # 로그
+```
+
+- 컨테이너는 non-root 사용자로 실행되고 파일시스템은 읽기 전용입니다.
+- 현재는 환경 변수가 필요 없습니다. LLM·공공데이터 연동이 추가되면 `.env.example` 을 복사한 `.env` 로 주입합니다(이미지에는 포함되지 않음).
+- 입력한 정보는 브라우저에서만 계산되며 컨테이너 로그에도 남지 않습니다.
+
 ## 구조
 
 ```
