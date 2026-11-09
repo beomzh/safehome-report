@@ -33,6 +33,10 @@ export interface FormState {
   marketSource: MarketSource;
   marketConfidence: 'high' | 'low';
   includeRegistry: boolean;
+  /** 실거래가 조회용 입력 (매물 텍스트 추출 결과가 채운다) */
+  lookupLawdCd: string;
+  lookupAreaM2: string;
+  lookupComplexName: string;
   owners: string;
   gapFlags: Record<GapFlagKey, boolean>;
   mortgages: MortgageRow[];
@@ -49,6 +53,9 @@ export const emptyForm = (): FormState => ({
   marketSource: 'user',
   marketConfidence: 'high',
   includeRegistry: false,
+  lookupLawdCd: '',
+  lookupAreaM2: '',
+  lookupComplexName: '',
   owners: '',
   gapFlags: {
     trust: false,

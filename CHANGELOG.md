@@ -1,3 +1,21 @@
+[2026-11-09 18:10]
+- [Added] - src/adapters/llm/provider.ts, openaiCompatible.ts: LLM 공급자 인터페이스와 OpenAI 호환(Responses·Chat Completions) 공급자. 구조화 출력(JSON Schema)+zod 검증, 재시도(4xx 제외), 타임아웃, 주소·키·모델명이 오류 메시지에 노출되지 않도록 비식별, 환경변수 팩토리
+- [Added] - src/adapters/llm/listing.ts: 매물 설명 항목 추출. 전화번호·이메일 제거, `<listing>` 구획 입력과 주입 방어 시스템 프롬프트, LLM 출력 범위 검증(`sanitizeListing`), 링크의 플랫폼·매물 번호 힌트 해석(링크 내용은 읽지 않음)
+- [Added] - src/app/api/listing/route.ts: LLM 항목 추출 서버 라우트 (LLM 미설정 시 503 안내, 텍스트·키는 로그에 남기지 않음)
+- [Added] - src/web/components/ListingImport.tsx: 링크·설명 붙여넣기, AI 추출, 결과 확인 후 입력칸 적용, 설명에 적힌 주의 문구 표시
+- [Changed] - src/web/form.ts, MarketLookup.tsx, InputForm.tsx, Analyzer.tsx: 시세 조회 입력을 폼 상태로 올려 추출 결과가 단지명·면적을 채우도록 연결, 리포트 모드 문구를 사전 점검으로 변경
+- [Added] - tests/llm/*.test.ts: 공급자(Responses·Chat, 재시도, 비식별, 환경변수)와 추출(PII 제거, 구획·주입, 범위 검증, URL 힌트) 테스트 29건
+- [Changed] - docs/adr/0005-llm-provider.md, docs/threat-model.md, docs/ROADMAP.md, README.md, .env.example: 실제 연동 결과(Responses API, Bearer 인증), 전송 범위, 주입 방어, 환경변수 설명 갱신
+
+[2026-11-09 18:10]
+- [Added] - src/adapters/llm/provider.ts, openaiCompatible.ts: LLM 공급자 인터페이스와 OpenAI 호환(Responses·Chat Completions) 공급자. 구조화 출력(JSON Schema)+zod 검증, 재시도(4xx 제외), 타임아웃, 주소·키·모델명이 오류 메시지에 노출되지 않도록 비식별, 환경변수 팩토리
+- [Added] - src/adapters/llm/listing.ts: 매물 설명 항목 추출. 전화번호·이메일 제거, `<listing>` 구획 입력과 주입 방어 시스템 프롬프트, LLM 출력 범위 검증(`sanitizeListing`), 링크의 플랫폼·매물 번호 힌트 해석(링크 내용은 읽지 않음)
+- [Added] - src/app/api/listing/route.ts: LLM 항목 추출 서버 라우트 (LLM 미설정 시 503 안내, 텍스트·키는 로그에 남기지 않음)
+- [Added] - src/web/components/ListingImport.tsx: 링크·설명 붙여넣기, AI 추출, 결과 확인 후 입력칸 적용, 설명에 적힌 주의 문구 표시
+- [Changed] - src/web/form.ts, MarketLookup.tsx, InputForm.tsx, Analyzer.tsx: 시세 조회 입력을 폼 상태로 올려 추출 결과가 단지명·면적을 채우도록 연결, 리포트 모드 문구를 사전 점검으로 변경
+- [Added] - tests/llm/*.test.ts: 공급자(Responses·Chat, 재시도, 비식별, 환경변수)와 추출(PII 제거, 구획·주입, 범위 검증, URL 힌트) 테스트 29건
+- [Changed] - docs/adr/0005-llm-provider.md, docs/threat-model.md, docs/ROADMAP.md, README.md, .env.example: 실제 연동 결과(Responses API, Bearer 인증), 전송 범위, 주입 방어, 환경변수 설명 갱신
+
 [2026-11-09 16:30]
 - [Added] - src/core/rules/ratio.ts `depositToMarketRatio`: 등기부 없이 보증금/시세 비율(R-RATIO-01)로 방문 전 사전 점검. 선순위를 모르는 하한값임을 근거에 명시하고, 기준 초과 시 등기부 없이도 red/yellow 판정 (등기부가 있으면 R-LTV-01 이 대신 판정)
 - [Changed] - src/core/engine.ts `RULES`: R-RATIO-01 등록

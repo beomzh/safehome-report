@@ -12,6 +12,7 @@ import { ChecklistPanel } from './ChecklistPanel';
 import { FinanceFields } from './FinanceFields';
 import { FinanceReport } from './FinanceReport';
 import { InputForm } from './InputForm';
+import { ListingImport } from './ListingImport';
 import { MarketLookup } from './MarketLookup';
 import { ReportView } from './ReportView';
 
@@ -69,7 +70,8 @@ export function Analyzer() {
         errors={errors}
         onSubmit={analyze}
         onReset={reset}
-        marketSlot={<MarketLookup setForm={setForm} />}
+        topSlot={<ListingImport setForm={setForm} />}
+        marketSlot={<MarketLookup form={form} setForm={setForm} />}
         extra={<FinanceFields fin={fin} setFin={setFin} kind={form.kind} />}
       />
       <div className="results">
