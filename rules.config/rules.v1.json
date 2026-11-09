@@ -151,5 +151,11 @@
     "localEducationPercent": 20,
     "status": "provisional",
     "source": "세무 칼럼 사이트(taxjang.com) 기재 내용 기준 2차 자료. 세율표·공정시장가액비율(60%, 1세대 1주택 43/44/45%)·도시지역분 0.14%·지방교육세 20%. 법령 원문(지방세법 제111조·제111조의2, 시행령 제109조)과 대조하지 못했다. 세부담상한·소방분 지역자원시설세는 미반영"
+  },
+  "verdict": {
+    "shortfallCautionPercent": 10,
+    "debtServiceCautionRatioPercent": 90,
+    "status": "provisional",
+    "source": "임시 기준값(제안자 설정). 처음 사용해 본 뒤 조정한다. 보증금/시세 임계치는 ltv 설정을 재사용한다"
   }
 }
