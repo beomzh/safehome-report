@@ -1,5 +1,5 @@
-import { affordabilityInputSchema } from '../core';
-import type { AffordabilityInput } from '../core';
+import { affordabilityInputSchema, requirementsInputSchema } from '../core';
+import type { AffordabilityInput, RequirementsInput } from '../core';
 import { parseManwon } from './form';
 import type { Kind } from './form';
 
@@ -65,9 +65,7 @@ export interface FinanceContext {
 
 export type FinanceBuildResult = { ok: true; input: AffordabilityInput } | { ok: false; errors: string[] };
 
-export function buildAffordabilityInput(form: FinanceFormState, ctx: FinanceContext): FinanceBuildResult {
-  const errors: string[] = [];
-
+function makeParsers(errors: string[]) {
   const reqWon = (label: string, raw: string): number => {
     const p = parseManwon(raw);
     if (!raw.trim()) errors.push(`${label}을(를) 입력하세요.`);
@@ -98,9 +96,12 @@ export function buildAffordabilityInput(form: FinanceFormState, ctx: FinanceCont
     }
     return p.value;
   };
+  return { reqWon, optWon, reqPct, optPct };
+}
 
-  const assets = reqWon('보유 자산(자기자금)', form.assetsManwon);
-  const annualIncome = reqWon('연소득', form.annualIncomeManwon);
+/** 대출 기준값·부대비용·기존 대출처럼 내 자산·소득과 무관한 입력을 해석한다 */
+function parseCommon(form: FinanceFormState, ctx: FinanceContext, errors: string[]) {
+  const { optWon, reqPct, optPct } = makeParsers(errors);
   const existingAnnualDebtPayment = optWon('기존 대출 연 상환액', form.existingAnnualDebtManwon) ?? 0;
 
   const ltvLimitPercent = reqPct('LTV 한도(%)', form.ltvLimitPercent);
@@ -125,7 +126,6 @@ export function buildAffordabilityInput(form: FinanceFormState, ctx: FinanceCont
   } else termMonths = Number(form.termYears) * 12;
 
   const productCap = optWon('상품·기관 한도', form.productCapManwon);
-
   const costs = {
     acquisitionTaxRatePercent: optPct('취득세 등 비율(%)', form.acquisitionTaxPercent),
     brokerFeeRatePercent: optPct('중개보수 요율(%)', form.brokerFeePercent),
@@ -136,8 +136,6 @@ export function buildAffordabilityInput(form: FinanceFormState, ctx: FinanceCont
   };
   const downPaymentPercent = optPct('계약금 비율(%)', form.downPaymentPercent);
 
-  if (errors.length > 0) return { ok: false, errors };
-
   // 담보가치: 매매는 매매가와 시세 중 낮은 값, 전세·월세는 보증금.
   // 선순위 채권은 차감하지 않는다 (매매 시 매도인의 기존 근저당은 잔금 때 말소되고, 전세대출 한도와도 무관)
   const collateralValue =
@@ -145,17 +143,79 @@ export function buildAffordabilityInput(form: FinanceFormState, ctx: FinanceCont
       ? Math.min(ctx.amountWon, ctx.marketWon)
       : ctx.amountWon;
 
-  const parsed = affordabilityInputSchema.safeParse({
-    kind: ctx.kind,
-    amount: ctx.amountWon,
-    collateralValue,
-    profile: { assets, annualIncome, existingAnnualDebtPayment },
+  return {
+    existingAnnualDebtPayment,
     loan: { ltvLimitPercent, dsrLimitPercent, annualRatePercent, stressAddPercent, termMonths, productCap },
     costs,
     downPaymentPercent,
+    collateralValue,
+  };
+}
+
+const GENERIC_ERROR = '대출·자금 계획 입력값이 올바르지 않습니다. 금액과 비율을 확인하세요.';
+
+export function buildAffordabilityInput(form: FinanceFormState, ctx: FinanceContext): FinanceBuildResult {
+  const errors: string[] = [];
+  const { reqWon } = makeParsers(errors);
+  const assets = reqWon('보유 자산(자기자금)', form.assetsManwon);
+  const annualIncome = reqWon('연소득', form.annualIncomeManwon);
+  const c = parseCommon(form, ctx, errors);
+  if (errors.length > 0) return { ok: false, errors };
+
+  const parsed = affordabilityInputSchema.safeParse({
+    kind: ctx.kind,
+    amount: ctx.amountWon,
+    collateralValue: c.collateralValue,
+    profile: { assets, annualIncome, existingAnnualDebtPayment: c.existingAnnualDebtPayment },
+    loan: c.loan,
+    costs: c.costs,
+    downPaymentPercent: c.downPaymentPercent,
   });
-  if (!parsed.success) {
-    return { ok: false, errors: ['대출·자금 계획 입력값이 올바르지 않습니다. 금액과 비율을 확인하세요.'] };
-  }
+  if (!parsed.success) return { ok: false, errors: [GENERIC_ERROR] };
   return { ok: true, input: parsed.data };
+}
+
+export type FinancePlanResult =
+  | { ok: true; requirements: RequirementsInput; affordability?: AffordabilityInput }
+  | { ok: false; errors: string[] };
+
+/**
+ * 대출·자금 계획 입력을 해석한다.
+ * - 필요 조건(역산)은 대출 기준값만 있으면 계산한다.
+ * - 보유 자산·연소득을 둘 다 입력하면 "내 상황" 판정(affordability)도 계산하고, 하나만 입력하면 오류로 안내한다.
+ */
+export function buildFinancePlan(form: FinanceFormState, ctx: FinanceContext): FinancePlanResult {
+  const errors: string[] = [];
+  const hasAssets = form.assetsManwon.trim() !== '';
+  const hasIncome = form.annualIncomeManwon.trim() !== '';
+  if (hasAssets !== hasIncome) {
+    errors.push('보유 자산과 연소득은 둘 다 입력하거나 둘 다 비워 두세요. (비우면 필요 조건만 계산합니다)');
+  }
+  const { reqWon } = makeParsers(errors);
+  const assets = hasAssets && hasIncome ? reqWon('보유 자산(자기자금)', form.assetsManwon) : undefined;
+  const annualIncome = hasAssets && hasIncome ? reqWon('연소득', form.annualIncomeManwon) : undefined;
+  const c = parseCommon(form, ctx, errors);
+  if (errors.length > 0) return { ok: false, errors };
+
+  const base = {
+    kind: ctx.kind,
+    amount: ctx.amountWon,
+    collateralValue: c.collateralValue,
+    loan: c.loan,
+    costs: c.costs,
+  };
+  const req = requirementsInputSchema.safeParse({
+    ...base,
+    existingAnnualDebtPayment: c.existingAnnualDebtPayment,
+  });
+  if (!req.success) return { ok: false, errors: [GENERIC_ERROR] };
+
+  if (assets === undefined || annualIncome === undefined) return { ok: true, requirements: req.data };
+  const aff = affordabilityInputSchema.safeParse({
+    ...base,
+    profile: { assets, annualIncome, existingAnnualDebtPayment: c.existingAnnualDebtPayment },
+    downPaymentPercent: c.downPaymentPercent,
+  });
+  if (!aff.success) return { ok: false, errors: [GENERIC_ERROR] };
+  return { ok: true, requirements: req.data, affordability: aff.data };
 }

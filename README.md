@@ -53,6 +53,24 @@ docker compose logs -f web # 로그
 - 현재는 환경 변수가 필요 없습니다. LLM·공공데이터 연동이 추가되면 `.env.example` 을 복사한 `.env` 로 주입합니다(이미지에는 포함되지 않음).
 - 입력한 정보는 브라우저에서만 계산되며 컨테이너 로그에도 남지 않습니다.
 
+## 로그 보기
+
+서버(컨테이너) 로그는 한 줄 JSON 입니다. 요청 번호, 소요 시간, 건수, 결과, 오류 종류만 남기며 **매물 텍스트·성명·금액·재무 정보·키·주소는 남기지 않습니다.**
+
+```bash
+docker compose logs -f web
+```
+
+```json
+{"ts":"…","level":"info","tag":"MARKET","event":"lookup_ok","req":"003805e5","status":200,"ms":459,"months":13,"samples":17,"confidence":"high"}
+{"ts":"…","level":"info","tag":"LISTING","event":"extract_ok","req":"cb2ba137","status":200,"ms":3178,"provider":"openai-compatible/responses","chars":60,"extracted":5}
+```
+
+- `MARKET` 은 실거래가 시세 조회, `LISTING` 은 매물 설명 AI 추출입니다. 재시도·오류는 `warn`/`error` 로 남습니다.
+- 링크만 입력하고 설명을 비우면 서버를 호출하지 않고 화면에서 안내하므로 로그가 없습니다.
+- 분석(위험 점검·자금 계산)은 브라우저 안에서만 실행되어 서버 로그에 남지 않습니다.
+- `LOG_LEVEL`(debug|info|warn|error)로 상세도를 조절하고, 로그 파일은 10MB×3개로 회전합니다.
+
 ## 구조
 
 ```

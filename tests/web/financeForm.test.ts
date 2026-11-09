@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { evaluateAffordability } from '../../src/core';
-import { buildAffordabilityInput, emptyFinanceForm, parsePercent } from '../../src/web/financeForm';
+import {
+  buildAffordabilityInput,
+  buildFinancePlan,
+  emptyFinanceForm,
+  parsePercent,
+} from '../../src/web/financeForm';
 import type { FinanceFormState } from '../../src/web/financeForm';
 
 const filled = (over: Partial<FinanceFormState> = {}): FinanceFormState => ({
@@ -109,5 +114,45 @@ describe('buildAffordabilityInput', () => {
         evaluateAffordability(none.input).base.byDsr,
       );
     }
+  });
+});
+
+describe('buildFinancePlan — 자산·소득 없이도 필요 조건 계산', () => {
+  const noProfile = (over: Partial<FinanceFormState> = {}) =>
+    filled({ assetsManwon: '', annualIncomeManwon: '', ...over });
+
+  it('자산·소득을 비워도 대출 기준값만 있으면 필요 조건 입력을 만든다', () => {
+    const r = buildFinancePlan(noProfile(), sale);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.affordability).toBeUndefined();
+      expect(r.requirements.loan.termMonths).toBe(360);
+      expect(r.requirements.collateralValue).toBe(500_000_000);
+    }
+  });
+
+  it('자산과 소득을 둘 다 입력하면 내 상황 판정 입력도 만든다', () => {
+    const r = buildFinancePlan(filled(), sale);
+    expect(r.ok && r.affordability?.profile.annualIncome).toBe(60_000_000);
+  });
+
+  it('둘 중 하나만 입력하면 오류로 안내한다', () => {
+    const onlyAssets = buildFinancePlan(noProfile({ assetsManwon: '20,000' }), sale);
+    const onlyIncome = buildFinancePlan(noProfile({ annualIncomeManwon: '6,000' }), sale);
+    for (const r of [onlyAssets, onlyIncome]) {
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.errors.join(' ')).toContain('둘 다 입력하거나 둘 다 비워');
+    }
+  });
+
+  it('대출 기준값(LTV·DSR·금리·기간)은 여전히 필수 — 기본값 없음', () => {
+    const r = buildFinancePlan(emptyFinanceForm(), sale);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.length).toBe(4);
+  });
+
+  it('기존 대출 상환액이 필요 조건 입력에 반영된다', () => {
+    const r = buildFinancePlan(noProfile({ existingAnnualDebtManwon: '600' }), sale);
+    expect(r.ok && r.requirements.existingAnnualDebtPayment).toBe(6_000_000);
   });
 });

@@ -39,7 +39,7 @@ export function FinanceFields({ fin, setFin, kind }: Props) {
           checked={fin.enabled}
           onChange={(e) => setFin((f) => ({ ...f, enabled: e.target.checked }))}
         />
-        내 자산·소득으로 필요 자금과 대출 가능액 추정하기
+        이 매물에 필요한 연소득·자산과 대출 한도 계산하기
       </label>
       <p className="hint">
         입력한 재무 정보는 이 브라우저 안에서만 계산되며 저장·전송되지 않습니다. 대출·세금 기준값은 규제와
@@ -49,14 +49,30 @@ export function FinanceFields({ fin, setFin, kind }: Props) {
       {fin.enabled && (
         <div className="registry">
           <fieldset>
-            <legend>내 재무 정보</legend>
-            {text('assetsManwon', '보유 자산·자기자금 (만원)', '예: 20,000')}
-            {text('annualIncomeManwon', '연소득 (만원)', '예: 6,000')}
+            <legend>내 재무 정보 (선택 — 비우면 "필요 조건"만 계산)</legend>
+            {text('assetsManwon', '보유 자산·자기자금 (만원, 선택)', '예: 20,000')}
+            {text('annualIncomeManwon', '연소득 (만원, 선택)', '예: 6,000')}
             {text('existingAnnualDebtManwon', '기존 대출 연 원리금 상환액 (만원, 없으면 비움)', '예: 600')}
           </fieldset>
 
           <fieldset>
-            <legend>대출 기준값</legend>
+            <legend>대출 기준값 (필수)</legend>
+            <button
+              type="button"
+              className="btn-link"
+              onClick={() =>
+                setFin((f) => ({
+                  ...f,
+                  ltvLimitPercent: f.ltvLimitPercent || '70',
+                  dsrLimitPercent: f.dsrLimitPercent || '40',
+                  annualRatePercent: f.annualRatePercent || '4',
+                  stressAddPercent: f.stressAddPercent || '1.5',
+                  termYears: f.termYears || '30',
+                }))
+              }
+            >
+              예시 값으로 빈 칸 채우기 (공식 값 아님 — 은행 안내값으로 바꾸세요)
+            </button>
             <div className="row2">
               {text('ltvLimitPercent', 'LTV 한도 (%)', '예: 70')}
               {text('dsrLimitPercent', 'DSR 한도 (%)', '예: 40')}

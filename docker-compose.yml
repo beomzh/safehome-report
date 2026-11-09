@@ -17,3 +17,9 @@ services:
     env_file:
       - path: .env
         required: false
+    # 로그 파일이 무한정 커지지 않도록 회전 (docker compose logs -f web 으로 확인)
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'

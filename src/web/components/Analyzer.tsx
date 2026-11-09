@@ -1,17 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { evaluateAffordability, evaluateRisk } from '../../core';
-import type { Affordability, RiskInput, RiskReport } from '../../core';
+import { evaluateAffordability, evaluateRequirements, evaluateRisk } from '../../core';
+import type { Affordability, Requirements, RiskInput, RiskReport } from '../../core';
 import { buildRiskInput, emptyForm, todayIso } from '../form';
 import type { FormState } from '../form';
-import { buildAffordabilityInput, emptyFinanceForm } from '../financeForm';
+import { buildFinancePlan, emptyFinanceForm } from '../financeForm';
 import type { FinanceFormState } from '../financeForm';
 import { rulesConfig } from '../rulesConfig';
 import { ChecklistPanel } from './ChecklistPanel';
 import { FinanceFields } from './FinanceFields';
 import { FinanceReport } from './FinanceReport';
 import { InputForm } from './InputForm';
+import { RequirementsReport } from './RequirementsReport';
 import { LoanCatalog } from './LoanCatalog';
 import { ListingImport } from './ListingImport';
 import { MarketLookup } from './MarketLookup';
@@ -21,6 +22,7 @@ interface Result {
   report: RiskReport;
   input: RiskInput;
   finance?: Affordability;
+  requirements?: Requirements;
 }
 
 export function Analyzer() {
@@ -34,16 +36,18 @@ export function Analyzer() {
     const errs: string[] = built.ok ? [] : [...built.errors];
 
     let finance: Affordability | undefined;
+    let requirements: Requirements | undefined;
     if (fin.enabled && built.ok) {
-      const finBuilt = buildAffordabilityInput(fin, {
+      const plan = buildFinancePlan(fin, {
         kind: built.input.contract.kind,
         amountWon: built.input.contract.amount,
         marketWon: built.input.market?.estimatedValue,
       });
-      if (!finBuilt.ok) errs.push(...finBuilt.errors);
-      else if (built.input.contract.amount <= 0)
-        errs.push('대출·자금 계획을 계산하려면 금액이 0보다 커야 합니다.');
-      else finance = evaluateAffordability(finBuilt.input);
+      if (!plan.ok) errs.push(...plan.errors);
+      else {
+        requirements = evaluateRequirements(plan.requirements);
+        if (plan.affordability) finance = evaluateAffordability(plan.affordability);
+      }
     }
 
     if (!built.ok || errs.length > 0) {
@@ -53,7 +57,7 @@ export function Analyzer() {
     }
     setErrors([]);
     // 순수 함수: 브라우저에서 실행되며 입력(재무 정보 포함)이 네트워크로 나가지 않는다
-    setResult({ report: evaluateRisk(built.input, rulesConfig), input: built.input, finance });
+    setResult({ report: evaluateRisk(built.input, rulesConfig), input: built.input, finance, requirements });
   };
 
   const reset = () => {
@@ -79,6 +83,14 @@ export function Analyzer() {
         {result ? (
           <>
             <ReportView report={result.report} input={result.input} />
+            {result.requirements && (
+              <RequirementsReport
+                requirements={result.requirements}
+                kind={result.input.contract.kind}
+                amountWon={result.input.contract.amount}
+                grade={result.report.grade}
+              />
+            )}
             {result.finance && <FinanceReport result={result.finance} grade={result.report.grade} />}
             <LoanCatalog kind={result.input.contract.kind} grade={result.report.grade} />
             <ChecklistPanel kind={result.input.contract.kind} />

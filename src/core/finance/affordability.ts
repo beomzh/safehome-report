@@ -81,7 +81,7 @@ export function estimateLoanScenario(
 }
 
 /** 필요 자금 항목 산출 (PRD §5.6). 입력하지 않은 비용은 0원 */
-export function requiredFundItems(input: AffordabilityInput): FundItem[] {
+export function requiredFundItems(input: Pick<AffordabilityInput, 'kind' | 'amount' | 'costs'>): FundItem[] {
   const c = input.costs ?? {};
   const isSale = input.kind === 'sale';
   const items: FundItem[] = [{ label: isSale ? '매매가' : '보증금', amount: input.amount }];
