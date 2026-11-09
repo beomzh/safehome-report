@@ -36,10 +36,17 @@
 - 실제 응답 샘플은 `tests/fixtures/public-data/` 에 있고 계약 테스트에 쓴다. 이 응답에는 키가 포함되지 않는다.
 - 현재 앱이 쓰는 것은 아파트 **매매** API 뿐이다. 깡통전세 판단의 시세는 매매 시세와 비교하기 때문이다(전월세 API는 전세가율 참고용으로 후속 검토).
 
+## 연립다세대·오피스텔 매매 (2026-11-09 시도)
+
+- 엔드포인트 경로는 존재한다: `RTMSDataSvcRHTrade/getRTMSDataSvcRHTrade`(연립다세대), `RTMSDataSvcOffiTrade/getRTMSDataSvcOffiTrade`(오피스텔), `RTMSDataSvcSHTrade/getRTMSDataSvcSHTrade`(단독/다가구). 현재 키로 호출하면 세 곳 모두 오류 코드 30(등록되지 않은 서비스 키)이 돌아온다. **각 API 상세 페이지에서 따로 활용신청해야 한다.**
+- 따라서 응답 필드는 실제로 확인하지 못했다. 앱은 연립다세대 `mhouseNm`, 오피스텔 `offiNm` 을 건물명으로, 나머지(`dealAmount`, `excluUseAr`, `dealYear/Month/Day`, `cdealType`)는 아파트와 같다고 가정해 읽는다. 이 가정이 틀리면 항목이 건너뛰어져 "조건에 맞는 거래 없음"으로 나타난다.
+- 활용신청을 하면 실제 응답으로 `src/adapters/public-data/housing.ts` 의 `verified` 를 올리고 `tests/fixtures/public-data/` 에 샘플을 추가한다.
+- 단독/다가구는 전용면적·건물명이 없어 면적 기준 시세 추정이 맞지 않으므로 지원하지 않는다(직접 입력).
+
 ## 확인하지 못한 것
 
 - `numOfRows` 허용 최대값(자료마다 1000/9999로 설명이 엇갈림).
-- 다가구·오피스텔·연립다세대 API의 엔드포인트와 요청 변수.
+- 다가구·오피스텔·연립다세대 API의 실제 응답 필드(활용신청 전).
 - 건축물대장 요청 변수(`sigunguCd`, `bjdongCd`, `bun`, `ji`)의 필수 여부와 코드 형식.
 - 공시가격(공동주택가격) API와 중개업 조회 API는 아직 후보를 정하지 못했다(ROADMAP M0).
 
