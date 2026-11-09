@@ -46,6 +46,7 @@ export async function GET(request: Request) {
   });
   try {
     const r = await service.estimate({
+      housing: parsed.query.housing,
       lawdCd: parsed.query.lawdCd,
       asOf: todayIso(),
       targetAreaM2: parsed.query.areaM2,
@@ -57,6 +58,7 @@ export async function GET(request: Request) {
       status: 200,
       ms: Date.now() - started,
       region: parsed.query.lawdCd,
+      housing: parsed.query.housing,
       withComplex: parsed.query.complexName !== undefined,
       months: r.monthsQueried,
       samples: r.sampleCount,

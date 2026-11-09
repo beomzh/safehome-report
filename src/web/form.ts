@@ -34,6 +34,7 @@ export interface FormState {
   marketConfidence: 'high' | 'low';
   includeRegistry: boolean;
   /** 실거래가 조회용 입력 (매물 텍스트 추출 결과가 채운다) */
+  lookupHousing: 'apt' | 'rowhouse' | 'officetel';
   lookupLawdCd: string;
   lookupAreaM2: string;
   lookupComplexName: string;
@@ -53,6 +54,7 @@ export const emptyForm = (): FormState => ({
   marketSource: 'user',
   marketConfidence: 'high',
   includeRegistry: false,
+  lookupHousing: 'apt',
   lookupLawdCd: '',
   lookupAreaM2: '',
   lookupComplexName: '',

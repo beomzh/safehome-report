@@ -7,7 +7,7 @@ describe('parseMarketQuery', () => {
   it('정상 입력', () => {
     expect(q('lawdCd=11680&areaM2=84.99&complexName= 래미안 ')).toEqual({
       ok: true,
-      query: { lawdCd: '11680', areaM2: 84.99, complexName: '래미안' },
+      query: { housing: 'apt', lawdCd: '11680', areaM2: 84.99, complexName: '래미안' },
     });
   });
   it('단지명은 선택', () => {

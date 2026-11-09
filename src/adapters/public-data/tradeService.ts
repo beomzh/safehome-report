@@ -1,8 +1,8 @@
 import { estimateMarketValue } from '../../core';
 import type { MarketEstimate, RulesConfig, TradeRecord } from '../../core';
-import { parseAptTradeXml, PublicDataError } from './aptTrade';
-
-const ENDPOINT = 'https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev';
+import { parseTradeXml, PublicDataError } from './aptTrade';
+import { HOUSING } from './housing';
+import type { HousingType } from './housing';
 
 export type AdapterLog = (
   level: 'debug' | 'warn',
@@ -39,7 +39,7 @@ export function monthsToFetch(asOf: string, windowMonths: number): string[] {
   return out;
 }
 
-/** 아파트 매매 실거래 조회 서비스. 지역·계약월 단위로 메모리 캐시해 일일 한도를 아낀다 */
+/** 매매 실거래(아파트·연립다세대·오피스텔) 조회 서비스. 지역·계약월 단위로 메모리 캐시해 일일 한도를 아낀다 */
 export function createTradeService(opts: TradeServiceOptions) {
   const fetchFn = opts.fetchFn ?? fetch;
   const timeoutMs = opts.timeoutMs ?? 10_000;
@@ -52,7 +52,8 @@ export function createTradeService(opts: TradeServiceOptions) {
   const key = opts.apiKey.includes('%') ? opts.apiKey : encodeURIComponent(opts.apiKey);
   const cache = new Map<string, { at: number; records: TradeRecord[] }>();
 
-  async function fetchPage(lawdCd: string, dealYmd: string, pageNo: number) {
+  async function fetchPage(housing: HousingType, lawdCd: string, dealYmd: string, pageNo: number) {
+    const spec = HOUSING[housing];
     const qs = new URLSearchParams({
       LAWD_CD: lawdCd,
       DEAL_YMD: dealYmd,
@@ -62,11 +63,11 @@ export function createTradeService(opts: TradeServiceOptions) {
     let lastError: unknown;
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        const res = await fetchFn(`${ENDPOINT}?serviceKey=${key}&${qs}`, {
+        const res = await fetchFn(`${spec.endpoint}?serviceKey=${key}&${qs}`, {
           signal: AbortSignal.timeout(timeoutMs),
         });
         if (!res.ok) throw new PublicDataError(`공공데이터 API HTTP ${res.status}`);
-        return parseAptTradeXml(await res.text());
+        return parseTradeXml(await res.text(), spec.nameTag);
       } catch (e) {
         lastError = e;
         log('warn', 'public_data_retry', {
@@ -74,14 +75,25 @@ export function createTradeService(opts: TradeServiceOptions) {
           attempt: attempt + 1,
           code: e instanceof PublicDataError ? (e.code ?? 'none') : 'network',
         });
+        if (e instanceof PublicDataError && e.code === '30' && housing !== 'apt') {
+          // 키에 이 API 권한이 없다: 활용신청 안내
+          throw new PublicDataError(
+            `${spec.label} 매매 실거래 API 활용신청이 되어 있지 않은 키입니다. 공공데이터포털에서 신청하세요: ${spec.applyUrl}`,
+            '30',
+          );
+        }
         if (e instanceof PublicDataError && e.code && NO_RETRY.has(e.code)) throw e;
       }
     }
     throw lastError instanceof Error ? lastError : new PublicDataError('공공데이터 API 호출 실패');
   }
 
-  async function fetchMonth(lawdCd: string, dealYmd: string): Promise<TradeRecord[]> {
-    const cacheKey = `${lawdCd}:${dealYmd}`;
+  async function fetchMonth(
+    lawdCd: string,
+    dealYmd: string,
+    housing: HousingType = 'apt',
+  ): Promise<TradeRecord[]> {
+    const cacheKey = `${housing}:${lawdCd}:${dealYmd}`;
     const hit = cache.get(cacheKey);
     if (hit && now() - hit.at < ttl) {
       log('debug', 'public_data_cache_hit', { month: dealYmd, records: hit.records.length });
@@ -91,7 +103,7 @@ export function createTradeService(opts: TradeServiceOptions) {
     const records: TradeRecord[] = [];
     let total = Infinity;
     for (let page = 1; page <= maxPages && records.length < total; page++) {
-      const parsed = await fetchPage(lawdCd, dealYmd, page);
+      const parsed = await fetchPage(housing, lawdCd, dealYmd, page);
       records.push(...parsed.records);
       total = parsed.totalCount;
       if (parsed.records.length === 0 && parsed.skipped === 0) break;
@@ -105,6 +117,7 @@ export function createTradeService(opts: TradeServiceOptions) {
     fetchMonth,
     /** 최근 거래를 모아 시세를 추정한다. 설정값(기간·최소 표본·면적 허용 오차)은 rules.config 에서 온다 */
     async estimate(args: {
+      housing?: HousingType;
       lawdCd: string;
       asOf: string;
       targetAreaM2: number;
@@ -112,7 +125,7 @@ export function createTradeService(opts: TradeServiceOptions) {
       config: RulesConfig['marketEstimate'];
     }): Promise<MarketEstimate & { monthsQueried: number }> {
       const months = monthsToFetch(args.asOf, args.config.windowMonths);
-      const batches = await Promise.all(months.map((ym) => fetchMonth(args.lawdCd, ym)));
+      const batches = await Promise.all(months.map((ym) => fetchMonth(args.lawdCd, ym, args.housing)));
       const result = estimateMarketValue(batches.flat(), {
         asOf: args.asOf,
         targetAreaM2: args.targetAreaM2,

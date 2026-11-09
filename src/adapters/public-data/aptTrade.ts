@@ -48,6 +48,11 @@ export interface ParsedTrades {
  * dealYear/dealMonth/dealDay, aptNm, cdealType(해제 시 값이 채워짐), totalCount.
  */
 export function parseAptTradeXml(xml: string): ParsedTrades {
+  return parseTradeXml(xml, 'aptNm');
+}
+
+/** 단지(건물)명 태그만 다른 매매 실거래 응답을 같은 방식으로 정규화한다 */
+export function parseTradeXml(xml: string, nameTag: string): ParsedTrades {
   const reasonCode = tag(xml, 'returnReasonCode');
   if (reasonCode !== undefined) {
     const msg = tag(xml, 'returnAuthMsg') ?? tag(xml, 'errMsg') ?? '';
@@ -77,7 +82,7 @@ export function parseAptTradeXml(xml: string): ParsedTrades {
       amountWon: amountMan * 10_000,
       areaM2: Number(tag(item, 'excluUseAr')),
       dealDate: `${year}-${month}-${day}`,
-      complexName: decodeEntities((tag(item, 'aptNm') ?? '').trim()) || undefined,
+      complexName: decodeEntities((tag(item, nameTag) ?? '').trim()) || undefined,
       cancelled: (tag(item, 'cdealType') ?? '').trim() !== '',
     };
     const parsed = tradeRecordSchema.safeParse(candidate);
