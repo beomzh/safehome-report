@@ -18,6 +18,12 @@ const brokerageBandSchema = z.object({
   capWon: z.number().int().positive().optional(),
 });
 
+/** 재산세 누진 구간. upToWon 이하(마지막 구간은 upToWon 없음)의 과세표준 부분에 ratePercent 적용 */
+const propertyTaxBracketSchema = z.object({
+  upToWon: z.number().int().positive().optional(),
+  ratePercent: z.number().positive(),
+});
+
 export const rulesConfigSchema = z.object({
   rulesetVersion: z.number().int().positive(),
   effectiveFrom: isoDateSchema,
@@ -55,6 +61,21 @@ export const rulesConfigSchema = z.object({
     /** 이 전용면적(㎡)을 초과하면 농어촌특별세 */
     ruralSpecialAboveAreaM2: z.number().positive(),
     ruralSpecialPercent: z.number().nonnegative(),
+  }),
+  /** 주택 재산세 (지방세법 제110~113조). 종합부동산세는 계산하지 않는다 */
+  propertyTax: sourcedSchema.extend({
+    brackets: z.array(propertyTaxBracketSchema).min(1),
+    /** 1세대 1주택 특례세율 (공시가격 singleHomeMaxPublicPriceWon 이하) */
+    singleHomeBrackets: z.array(propertyTaxBracketSchema).min(1),
+    singleHomeMaxPublicPriceWon: z.number().int().positive(),
+    /** 과세표준 = 공시가격 × 공정시장가액비율(%) */
+    fairMarketPercent: z.number().positive(),
+    /** 1세대 1주택 공정시장가액비율: 공시가격 upToWon 이하(마지막은 upToWon 없음)이면 ratePercent */
+    singleHomeFairMarket: z.array(propertyTaxBracketSchema).min(1),
+    /** 도시지역분: 과세표준의 이 비율(%)을 재산세에 더한다 */
+    urbanAreaPercent: z.number().nonnegative(),
+    /** 지방교육세 = 재산세액의 이 비율(%) */
+    localEducationPercent: z.number().nonnegative(),
   }),
   /** 중개보수 상한 요율표 (시·도 조례로 정해지므로 지역별로 다를 수 있다) */
   brokerage: sourcedSchema.extend({

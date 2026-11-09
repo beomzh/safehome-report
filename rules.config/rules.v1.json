@@ -38,25 +38,118 @@
   },
   "brokerage": {
     "sale": [
-      { "underWon": 50000000, "ratePercent": 0.6, "capWon": 250000 },
-      { "underWon": 200000000, "ratePercent": 0.5, "capWon": 800000 },
-      { "underWon": 900000000, "ratePercent": 0.4 },
-      { "underWon": 1200000000, "ratePercent": 0.5 },
-      { "underWon": 1500000000, "ratePercent": 0.6 },
-      { "ratePercent": 0.7 }
+      {
+        "underWon": 50000000,
+        "ratePercent": 0.6,
+        "capWon": 250000
+      },
+      {
+        "underWon": 200000000,
+        "ratePercent": 0.5,
+        "capWon": 800000
+      },
+      {
+        "underWon": 900000000,
+        "ratePercent": 0.4
+      },
+      {
+        "underWon": 1200000000,
+        "ratePercent": 0.5
+      },
+      {
+        "underWon": 1500000000,
+        "ratePercent": 0.6
+      },
+      {
+        "ratePercent": 0.7
+      }
     ],
     "lease": [
-      { "underWon": 50000000, "ratePercent": 0.5, "capWon": 200000 },
-      { "underWon": 100000000, "ratePercent": 0.4, "capWon": 300000 },
-      { "underWon": 600000000, "ratePercent": 0.3 },
-      { "underWon": 1200000000, "ratePercent": 0.4 },
-      { "underWon": 1500000000, "ratePercent": 0.5 },
-      { "ratePercent": 0.6 }
+      {
+        "underWon": 50000000,
+        "ratePercent": 0.5,
+        "capWon": 200000
+      },
+      {
+        "underWon": 100000000,
+        "ratePercent": 0.4,
+        "capWon": 300000
+      },
+      {
+        "underWon": 600000000,
+        "ratePercent": 0.3
+      },
+      {
+        "underWon": 1200000000,
+        "ratePercent": 0.4
+      },
+      {
+        "underWon": 1500000000,
+        "ratePercent": 0.5
+      },
+      {
+        "ratePercent": 0.6
+      }
     ],
     "monthlyRentMultiplier": 100,
     "monthlyRentMultiplierBelowThreshold": 70,
     "monthlyRentThresholdWon": 50000000,
     "status": "provisional",
     "source": "경기도·수원시 공공 안내와 2차 자료의 상한 요율표(구간은 일치, 일부 한도액은 자료마다 다름). 서울시 조례 원문은 확인하지 못함. 부가세 별도, 15억 이상·9억 초과 매매는 협의 가능"
+  },
+  "propertyTax": {
+    "brackets": [
+      {
+        "upToWon": 60000000,
+        "ratePercent": 0.1
+      },
+      {
+        "upToWon": 150000000,
+        "ratePercent": 0.15
+      },
+      {
+        "upToWon": 300000000,
+        "ratePercent": 0.25
+      },
+      {
+        "ratePercent": 0.4
+      }
+    ],
+    "singleHomeBrackets": [
+      {
+        "upToWon": 60000000,
+        "ratePercent": 0.05
+      },
+      {
+        "upToWon": 150000000,
+        "ratePercent": 0.1
+      },
+      {
+        "upToWon": 300000000,
+        "ratePercent": 0.2
+      },
+      {
+        "ratePercent": 0.35
+      }
+    ],
+    "singleHomeMaxPublicPriceWon": 900000000,
+    "fairMarketPercent": 60,
+    "singleHomeFairMarket": [
+      {
+        "upToWon": 300000000,
+        "ratePercent": 43
+      },
+      {
+        "upToWon": 600000000,
+        "ratePercent": 44
+      },
+      {
+        "ratePercent": 45
+      }
+    ],
+    "urbanAreaPercent": 0.14,
+    "localEducationPercent": 20,
+    "status": "provisional",
+    "source": "세무 칼럼 사이트(taxjang.com) 기재 내용 기준 2차 자료. 세율표·공정시장가액비율(60%, 1세대 1주택 43/44/45%)·도시지역분 0.14%·지방교육세 20%. 법령 원문(지방세법 제111조·제111조의2, 시행령 제109조)과 대조하지 못했다. 세부담상한·소방분 지역자원시설세는 미반영"
   }
 }

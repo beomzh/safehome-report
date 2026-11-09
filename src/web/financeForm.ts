@@ -1,4 +1,10 @@
-import { acquisitionTax, affordabilityInputSchema, brokerageFee, requirementsInputSchema } from '../core';
+import {
+  acquisitionTax,
+  affordabilityInputSchema,
+  brokerageFee,
+  propertyTax,
+  requirementsInputSchema,
+} from '../core';
 import type { AffordabilityInput, RequirementsInput, RulesConfig } from '../core';
 import { formatWon } from './present';
 import { parseManwon } from './form';
@@ -14,6 +20,10 @@ export interface FinanceFormState {
   autoCosts: boolean;
   /** 월세 금액(만원) — 월세 중개보수 환산에 사용 */
   monthlyRentManwon: string;
+  /** 매매 주택의 공시가격(만원) — 재산세 계산용. 비우면 보유세를 계산하지 않는다 */
+  publicPriceManwon: string;
+  /** 1세대 1주택 여부 (재산세 특례세율) */
+  singleHome: boolean;
   /** AI 제안으로 채워진 대출 기준값 칸 이름들. 사용자가 그 칸을 직접 고치면 목록에서 빠진다. 리포트에 공식 값이 아님을 표시한다 */
   aiFields: string[];
   assetsManwon: string;
@@ -38,6 +48,8 @@ export const emptyFinanceForm = (): FinanceFormState => ({
   enabled: false,
   autoCosts: true,
   monthlyRentManwon: '',
+  publicPriceManwon: '',
+  singleHome: false,
   aiFields: [],
   assetsManwon: '',
   annualIncomeManwon: '',
@@ -112,7 +124,7 @@ function makeParsers(errors: string[]) {
 }
 
 /** 대출 기준값·부대비용·기존 대출처럼 내 자산·소득과 무관한 입력을 해석한다 */
-type CostConfig = Pick<RulesConfig, 'acquisitionTax' | 'brokerage'>;
+type CostConfig = Pick<RulesConfig, 'acquisitionTax' | 'brokerage' | 'propertyTax'>;
 
 function parseCommon(form: FinanceFormState, ctx: FinanceContext, errors: string[], config?: CostConfig) {
   const { optWon, reqPct, optPct } = makeParsers(errors);
@@ -171,8 +183,17 @@ function parseCommon(form: FinanceFormState, ctx: FinanceContext, errors: string
       );
     }
     if (ctx.kind === 'sale') {
+      const publicPrice = optWon('공시가격', form.publicPriceManwon);
+      if (publicPrice !== undefined && publicPrice > 0) {
+        const p = propertyTax(publicPrice, form.singleHome, config.propertyTax);
+        costNotes.push(
+          `재산세(연, 필요 자금에는 포함하지 않음) 약 ${formatWon(p.totalWon)}: 과세표준 ${formatWon(p.taxBaseWon)}(공시가격 × ${p.fairMarketPercent}%) → 재산세 ${formatWon(p.propertyTaxWon)}(도시지역분 ${formatWon(p.urbanAreaWon)} 포함) + 지방교육세 ${formatWon(p.localEducationTaxWon)}${p.singleHomeApplied ? ' (1세대 1주택 특례 적용)' : ''}`,
+          ...p.notes,
+        );
+      }
+      if (publicPrice === undefined) costNotes.push('보유세는 공시가격을 입력하면 재산세만 계산합니다.');
       costNotes.push(
-        '보유세(재산세·종합부동산세)는 계산하지 않았습니다. 공시가격·보유 주택 수에 따라 달라지고 세제 개편이 진행 중이라 확정 값을 제공할 수 없습니다. 위택스·홈택스 계산기로 확인하세요.',
+        '종합부동산세는 계산하지 않았습니다. 공시가격 합계가 1세대 1주택 12억 원(그 외 9억 원)을 넘을 때 대상이 되는 것으로 알려져 있으나 세제 개편이 진행 중이라 확정 값을 제공할 수 없습니다. 홈택스 계산기로 확인하세요.',
       );
     }
     costNotes.push(

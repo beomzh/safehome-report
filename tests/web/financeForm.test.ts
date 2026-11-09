@@ -176,6 +176,26 @@ describe('법정 요율 자동 계산 (취득세·중개보수)', () => {
     }
   });
 
+  it('공시가격을 입력하면 재산세를 안내하되 필요 자금에는 넣지 않는다', () => {
+    const base = plan(noProfile());
+    const r = plan(noProfile({ publicPriceManwon: '50,000', singleHome: true }));
+    expect(r.ok && base.ok).toBe(true);
+    if (r.ok && base.ok) {
+      const text = r.costNotes.join(' ');
+      expect(text).toContain('재산세(연');
+      expect(text).toContain('68만');
+      expect(text).toContain('1세대 1주택 특례');
+      expect(evaluateRequirements(r.requirements).totalRequired).toBe(
+        evaluateRequirements(base.requirements).totalRequired,
+      );
+    }
+  });
+
+  it('공시가격 형식이 틀리면 오류로 안내한다', () => {
+    const r = plan(noProfile({ publicPriceManwon: '오억' }));
+    expect(r.ok).toBe(false);
+  });
+
   it('85㎡ 초과면 농어촌특별세 0.2%가 더해진다', () => {
     const r = plan(noProfile(), { ...sale, areaM2: 85.5 });
     expect(r.ok && r.requirements.costs?.acquisitionTaxOverrideWon).toBe(5_000_000 + 500_000 + 1_000_000);
