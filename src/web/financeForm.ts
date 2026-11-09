@@ -1,5 +1,6 @@
-import { affordabilityInputSchema, requirementsInputSchema } from '../core';
-import type { AffordabilityInput, RequirementsInput } from '../core';
+import { acquisitionTax, affordabilityInputSchema, brokerageFee, requirementsInputSchema } from '../core';
+import type { AffordabilityInput, RequirementsInput, RulesConfig } from '../core';
+import { formatWon } from './present';
 import { parseManwon } from './form';
 import type { Kind } from './form';
 
@@ -9,6 +10,10 @@ import type { Kind } from './form';
  */
 export interface FinanceFormState {
   enabled: boolean;
+  /** 취득세·중개보수를 법정 요율로 자동 계산 (직접 입력한 값이 있으면 그 값을 우선) */
+  autoCosts: boolean;
+  /** 월세 금액(만원) — 월세 중개보수 환산에 사용 */
+  monthlyRentManwon: string;
   assetsManwon: string;
   annualIncomeManwon: string;
   existingAnnualDebtManwon: string;
@@ -29,6 +34,8 @@ export interface FinanceFormState {
 
 export const emptyFinanceForm = (): FinanceFormState => ({
   enabled: false,
+  autoCosts: true,
+  monthlyRentManwon: '',
   assetsManwon: '',
   annualIncomeManwon: '',
   existingAnnualDebtManwon: '',
@@ -61,6 +68,8 @@ export interface FinanceContext {
   amountWon: number;
   /** 입력된 시세 (원). 매매 담보가치 산정에 사용 */
   marketWon?: number;
+  /** 전용면적(㎡). 취득세의 농어촌특별세 판단에 사용 */
+  areaM2?: number;
 }
 
 export type FinanceBuildResult = { ok: true; input: AffordabilityInput } | { ok: false; errors: string[] };
@@ -100,7 +109,9 @@ function makeParsers(errors: string[]) {
 }
 
 /** 대출 기준값·부대비용·기존 대출처럼 내 자산·소득과 무관한 입력을 해석한다 */
-function parseCommon(form: FinanceFormState, ctx: FinanceContext, errors: string[]) {
+type CostConfig = Pick<RulesConfig, 'acquisitionTax' | 'brokerage'>;
+
+function parseCommon(form: FinanceFormState, ctx: FinanceContext, errors: string[], config?: CostConfig) {
   const { optWon, reqPct, optPct } = makeParsers(errors);
   const existingAnnualDebtPayment = optWon('기존 대출 연 상환액', form.existingAnnualDebtManwon) ?? 0;
 
@@ -126,7 +137,7 @@ function parseCommon(form: FinanceFormState, ctx: FinanceContext, errors: string
   } else termMonths = Number(form.termYears) * 12;
 
   const productCap = optWon('상품·기관 한도', form.productCapManwon);
-  const costs = {
+  const costs: Record<string, number | undefined> = {
     acquisitionTaxRatePercent: optPct('취득세 등 비율(%)', form.acquisitionTaxPercent),
     brokerFeeRatePercent: optPct('중개보수 요율(%)', form.brokerFeePercent),
     brokerFeeOverrideWon: optWon('중개보수 금액', form.brokerFeeOverrideManwon),
@@ -135,6 +146,36 @@ function parseCommon(form: FinanceFormState, ctx: FinanceContext, errors: string
     otherCostsWon: optWon('이사·수리 등 기타 비용', form.otherCostsManwon),
   };
   const downPaymentPercent = optPct('계약금 비율(%)', form.downPaymentPercent);
+  const monthlyRentWon = optWon('월세', form.monthlyRentManwon);
+
+  // 법정 요율 자동 계산: 직접 입력한 값이 있으면 그 값을 우선한다
+  const costNotes: string[] = [];
+  if (form.autoCosts && config) {
+    if (ctx.kind === 'sale' && costs.acquisitionTaxRatePercent === undefined) {
+      const t = acquisitionTax(ctx.amountWon, ctx.areaM2, config.acquisitionTax);
+      costs.acquisitionTaxOverrideWon = t.total;
+      costNotes.push(
+        `취득세 ${t.taxRatePercent}% = ${formatWon(t.acquisitionTax)} + 지방교육세 ${formatWon(t.localEducationTax)} + 농어촌특별세 ${formatWon(t.ruralSpecialTax)} → ${formatWon(t.total)}`,
+        ...t.notes,
+      );
+    }
+    if (costs.brokerFeeRatePercent === undefined && costs.brokerFeeOverrideWon === undefined) {
+      const b = brokerageFee(ctx.kind, ctx.amountWon, monthlyRentWon, config.brokerage);
+      costs.brokerFeeOverrideWon = b.feeWon;
+      costNotes.push(
+        `중개보수 상한 ${b.ratePercent}%${b.capped ? ` (한도 ${formatWon(b.capWon ?? 0)} 적용)` : ''} = ${formatWon(b.feeWon)} (한 쪽 부담분)`,
+        ...b.notes,
+      );
+    }
+    if (ctx.kind === 'sale') {
+      costNotes.push(
+        '보유세(재산세·종합부동산세)는 계산하지 않았습니다. 공시가격·보유 주택 수에 따라 달라지고 세제 개편이 진행 중이라 확정 값을 제공할 수 없습니다. 위택스·홈택스 계산기로 확인하세요.',
+      );
+    }
+    costNotes.push(
+      `요율표는 ${config.acquisitionTax.status === 'provisional' ? '잠정값(공식 원문으로 최종 확인 필요)' : '확인된 값'}입니다.`,
+    );
+  }
 
   // 담보가치: 매매는 매매가와 시세 중 낮은 값, 전세·월세는 보증금.
   // 선순위 채권은 차감하지 않는다 (매매 시 매도인의 기존 근저당은 잔금 때 말소되고, 전세대출 한도와도 무관)
@@ -149,17 +190,22 @@ function parseCommon(form: FinanceFormState, ctx: FinanceContext, errors: string
     costs,
     downPaymentPercent,
     collateralValue,
+    costNotes,
   };
 }
 
 const GENERIC_ERROR = '대출·자금 계획 입력값이 올바르지 않습니다. 금액과 비율을 확인하세요.';
 
-export function buildAffordabilityInput(form: FinanceFormState, ctx: FinanceContext): FinanceBuildResult {
+export function buildAffordabilityInput(
+  form: FinanceFormState,
+  ctx: FinanceContext,
+  config?: CostConfig,
+): FinanceBuildResult {
   const errors: string[] = [];
   const { reqWon } = makeParsers(errors);
   const assets = reqWon('보유 자산(자기자금)', form.assetsManwon);
   const annualIncome = reqWon('연소득', form.annualIncomeManwon);
-  const c = parseCommon(form, ctx, errors);
+  const c = parseCommon(form, ctx, errors, config);
   if (errors.length > 0) return { ok: false, errors };
 
   const parsed = affordabilityInputSchema.safeParse({
@@ -176,7 +222,7 @@ export function buildAffordabilityInput(form: FinanceFormState, ctx: FinanceCont
 }
 
 export type FinancePlanResult =
-  | { ok: true; requirements: RequirementsInput; affordability?: AffordabilityInput }
+  | { ok: true; requirements: RequirementsInput; affordability?: AffordabilityInput; costNotes: string[] }
   | { ok: false; errors: string[] };
 
 /**
@@ -184,7 +230,11 @@ export type FinancePlanResult =
  * - 필요 조건(역산)은 대출 기준값만 있으면 계산한다.
  * - 보유 자산·연소득을 둘 다 입력하면 "내 상황" 판정(affordability)도 계산하고, 하나만 입력하면 오류로 안내한다.
  */
-export function buildFinancePlan(form: FinanceFormState, ctx: FinanceContext): FinancePlanResult {
+export function buildFinancePlan(
+  form: FinanceFormState,
+  ctx: FinanceContext,
+  config?: CostConfig,
+): FinancePlanResult {
   const errors: string[] = [];
   const hasAssets = form.assetsManwon.trim() !== '';
   const hasIncome = form.annualIncomeManwon.trim() !== '';
@@ -194,7 +244,7 @@ export function buildFinancePlan(form: FinanceFormState, ctx: FinanceContext): F
   const { reqWon } = makeParsers(errors);
   const assets = hasAssets && hasIncome ? reqWon('보유 자산(자기자금)', form.assetsManwon) : undefined;
   const annualIncome = hasAssets && hasIncome ? reqWon('연소득', form.annualIncomeManwon) : undefined;
-  const c = parseCommon(form, ctx, errors);
+  const c = parseCommon(form, ctx, errors, config);
   if (errors.length > 0) return { ok: false, errors };
 
   const base = {
@@ -210,12 +260,14 @@ export function buildFinancePlan(form: FinanceFormState, ctx: FinanceContext): F
   });
   if (!req.success) return { ok: false, errors: [GENERIC_ERROR] };
 
-  if (assets === undefined || annualIncome === undefined) return { ok: true, requirements: req.data };
+  if (assets === undefined || annualIncome === undefined) {
+    return { ok: true, requirements: req.data, costNotes: c.costNotes };
+  }
   const aff = affordabilityInputSchema.safeParse({
     ...base,
     profile: { assets, annualIncome, existingAnnualDebtPayment: c.existingAnnualDebtPayment },
     downPaymentPercent: c.downPaymentPercent,
   });
   if (!aff.success) return { ok: false, errors: [GENERIC_ERROR] };
-  return { ok: true, requirements: req.data, affordability: aff.data };
+  return { ok: true, requirements: req.data, affordability: aff.data, costNotes: c.costNotes };
 }

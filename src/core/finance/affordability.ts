@@ -87,7 +87,10 @@ export function requiredFundItems(input: Pick<AffordabilityInput, 'kind' | 'amou
   const items: FundItem[] = [{ label: isSale ? '매매가' : '보증금', amount: input.amount }];
 
   if (isSale) {
-    items.push({ label: '취득세 등', amount: mulPercent(input.amount, c.acquisitionTaxRatePercent ?? 0) });
+    items.push({
+      label: '취득세 등',
+      amount: c.acquisitionTaxOverrideWon ?? mulPercent(input.amount, c.acquisitionTaxRatePercent ?? 0),
+    });
   }
   items.push({
     label: '중개보수',

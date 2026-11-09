@@ -1,0 +1,56 @@
+# 운영 가이드
+
+README의 빠른 시작을 넘어, 이미 쓰고 있는 사람이 설정과 운영에서 찾는 내용입니다.
+
+## 환경 변수
+
+`.env.example` 을 `.env` 로 복사해 사용합니다. `.env` 는 `.gitignore` 로 커밋되지 않고, `.dockerignore` 로 이미지에도 들어가지 않습니다. Docker 로 실행하면 `docker-compose.yml` 이 `.env` 를 컨테이너에 **실행할 때만** 주입합니다.
+
+| 변수                  | 필수        | 설명                                                                                                                                                                                                   |
+| --------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PUBLIC_DATA_API_KEY` | 선택        | 공공데이터포털 일반 인증키. "실거래가로 시세 조회"에 사용합니다. 없으면 시세 조회 버튼이 안내 메시지를 보여주고, 시세는 직접 입력할 수 있습니다. 발급할 API는 [public-data-api.md](public-data-api.md) |
+| `LLM_PROVIDER`        | 선택        | `none`(기본) 또는 `openai-compatible`. `none` 이면 "AI로 항목 추출"이 안내 메시지를 보여줍니다.                                                                                                        |
+| `LLM_BASE_URL`        | LLM 사용 시 | `…/responses`(Responses API) 또는 `…/chat/completions` 전체 주소. 루트(`…/v1`)만 주면 chat/completions 를 붙입니다.                                                                                    |
+| `LLM_API_KEY`         | LLM 사용 시 | Bearer 인증 키                                                                                                                                                                                         |
+| `LLM_MODEL`           | LLM 사용 시 | 모델(배포) 이름                                                                                                                                                                                        |
+| `LLM_TIMEOUT_MS`      | 선택        | 응답 대기 시간(기본 30000)                                                                                                                                                                             |
+| `LOG_LEVEL`           | 선택        | `debug` · `info`(기본) · `warn` · `error`                                                                                                                                                              |
+
+주소·키·모델명은 저장소, 문서, 로그, 오류 메시지 어디에도 쓰지 않습니다.
+
+## Docker 운영
+
+```bash
+docker compose up -d --build   # 빌드하고 기동
+docker compose ps              # 상태 (healthy 확인)
+docker compose logs -f web     # 로그
+docker compose down            # 중지
+```
+
+- 포트는 `127.0.0.1:3000` 에만 바인딩됩니다.
+- 컨테이너는 non-root 사용자(`node`)로 실행되고, 파일시스템은 읽기 전용(`/tmp` 만 tmpfs), 모든 capability 를 제거하고 `no-new-privileges` 를 적용합니다.
+- 로그 파일은 10MB × 3개로 회전합니다.
+- CI 는 PR 마다 이미지를 빌드해 읽기 전용으로 기동하고 HTTP 응답과 non-root 실행을 확인합니다.
+
+## 로그 보기
+
+서버(컨테이너) 로그는 한 줄 JSON 입니다. 요청 번호, 소요 시간, 건수, 결과, 오류 종류만 남기며 **매물 텍스트·성명·금액·재무 정보·단지명·링크·키·주소는 남기지 않습니다.**
+
+```json
+{"ts":"…","level":"info","tag":"MARKET","event":"lookup_ok","req":"003805e5","status":200,"ms":459,"months":13,"samples":17,"confidence":"high"}
+{"ts":"…","level":"info","tag":"LISTING","event":"extract_ok","req":"cb2ba137","status":200,"ms":3178,"provider":"openai-compatible/responses","chars":60,"extracted":5}
+```
+
+- `MARKET` 은 실거래가 시세 조회, `LISTING` 은 매물 설명 AI 추출입니다.
+- 재시도는 `warn`(`public_data_retry`, `llm_retry`), 실패는 `error` 로 남습니다. `debug` 에서는 캐시 적중과 월별 로딩 건수도 보입니다.
+- 설명을 비운 채 링크만 입력하면 서버를 호출하지 않고 화면에서 안내하므로 로그가 없습니다.
+- 위험 점검과 자금 계산은 브라우저 안에서만 실행되어 서버 로그에 남지 않습니다.
+
+## 문제 해결
+
+| 증상                                            | 확인                                                                                                            |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| "PUBLIC_DATA_API_KEY 가 설정되어 있지 않습니다" | `.env` 에 키가 있는지, Docker 라면 `docker compose up -d` 로 다시 기동했는지                                    |
+| 시세 조회가 "한도 초과"(코드 22)                | 공공데이터 개발계정은 하루 10,000건입니다. 같은 지역·월은 6시간 캐시됩니다.                                     |
+| "LLM 이 설정되어 있지 않습니다"                 | `LLM_PROVIDER=openai-compatible` 과 `LLM_BASE_URL`·`LLM_API_KEY`·`LLM_MODEL` 설정                               |
+| LLM 응답이 형식과 다르다는 오류                 | 같은 요청을 다시 시도하세요(자동 재시도 1회). 계속되면 모델이 구조화 출력(JSON Schema)을 지원하는지 확인하세요. |

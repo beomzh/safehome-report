@@ -36,6 +36,8 @@ export type LoanAssumptions = z.infer<typeof loanAssumptionsSchema>;
 export const costAssumptionsSchema = z.object({
   /** 매매 취득세 등 세금 비율(%) */
   acquisitionTaxRatePercent: percentSchema.optional(),
+  /** 취득세·지방교육세·농어촌특별세 합계 금액. 있으면 비율보다 우선 (법정 계산 결과를 넘길 때 사용) */
+  acquisitionTaxOverrideWon: wonSchema.optional(),
   /** 중개보수 요율(%). brokerFeeOverrideWon 이 있으면 그 금액을 쓴다 */
   brokerFeeRatePercent: percentSchema.optional(),
   brokerFeeOverrideWon: wonSchema.optional(),

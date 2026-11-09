@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { evaluateAffordability } from '../../src/core';
+import { evaluateAffordability, evaluateRequirements } from '../../src/core';
 import {
   buildAffordabilityInput,
   buildFinancePlan,
   emptyFinanceForm,
   parsePercent,
 } from '../../src/web/financeForm';
-import type { FinanceFormState } from '../../src/web/financeForm';
+import type { FinanceContext, FinanceFormState } from '../../src/web/financeForm';
+import { rulesConfig } from '../../src/web/rulesConfig';
 
 const filled = (over: Partial<FinanceFormState> = {}): FinanceFormState => ({
   ...emptyFinanceForm(),
@@ -154,5 +155,69 @@ describe('buildFinancePlan — 자산·소득 없이도 필요 조건 계산', (
   it('기존 대출 상환액이 필요 조건 입력에 반영된다', () => {
     const r = buildFinancePlan(noProfile({ existingAnnualDebtManwon: '600' }), sale);
     expect(r.ok && r.requirements.existingAnnualDebtPayment).toBe(6_000_000);
+  });
+});
+
+describe('법정 요율 자동 계산 (취득세·중개보수)', () => {
+  const noProfile = (over: Partial<FinanceFormState> = {}) =>
+    filled({ assetsManwon: '', annualIncomeManwon: '', ...over });
+  const plan = (form: FinanceFormState, ctx: FinanceContext = { ...sale, areaM2: 84 }) =>
+    buildFinancePlan(form, ctx, rulesConfig);
+
+  it('매매 5억·84㎡: 취득세 550만(본세 500+교육세 50) + 중개보수 200만을 자동으로 넣는다', () => {
+    const r = plan(noProfile());
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.requirements.costs?.acquisitionTaxOverrideWon).toBe(5_500_000);
+      expect(r.requirements.costs?.brokerFeeOverrideWon).toBe(2_000_000);
+      expect(evaluateRequirements(r.requirements).totalRequired).toBe(507_500_000);
+      expect(r.costNotes.join(' ')).toContain('취득세 1%');
+      expect(r.costNotes.join(' ')).toContain('보유세');
+    }
+  });
+
+  it('85㎡ 초과면 농어촌특별세 0.2%가 더해진다', () => {
+    const r = plan(noProfile(), { ...sale, areaM2: 85.5 });
+    expect(r.ok && r.requirements.costs?.acquisitionTaxOverrideWon).toBe(5_000_000 + 500_000 + 1_000_000);
+  });
+
+  it('직접 입력한 세율·중개보수가 있으면 자동 계산 대신 그 값을 쓴다', () => {
+    const r = plan(noProfile({ acquisitionTaxPercent: '8', brokerFeeOverrideManwon: '300' }));
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.requirements.costs?.acquisitionTaxOverrideWon).toBeUndefined();
+      expect(r.requirements.costs?.acquisitionTaxRatePercent).toBe(8);
+      expect(r.requirements.costs?.brokerFeeOverrideWon).toBe(3_000_000);
+      expect(evaluateRequirements(r.requirements).items.find((i) => i.label === '취득세 등')?.amount).toBe(
+        40_000_000,
+      );
+    }
+  });
+
+  it('자동 계산을 끄면 입력한 값만 쓴다 (비어 있으면 0원)', () => {
+    const r = plan(noProfile({ autoCosts: false }));
+    expect(r.ok && r.requirements.costs?.acquisitionTaxOverrideWon).toBeUndefined();
+    expect(r.ok && r.requirements.costs?.brokerFeeOverrideWon).toBeUndefined();
+    expect(r.ok && r.costNotes).toEqual([]);
+  });
+
+  it('전세는 취득세 없이 중개보수만, 보유세 안내도 없다', () => {
+    const r = plan(noProfile(), { kind: 'jeonse', amountWon: 300_000_000 });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.requirements.costs?.acquisitionTaxOverrideWon).toBeUndefined();
+      expect(r.requirements.costs?.brokerFeeOverrideWon).toBe(900_000);
+      expect(r.costNotes.join(' ')).not.toContain('보유세');
+    }
+  });
+
+  it('월세는 월세를 환산보증금에 반영한다 (보증금 1천만 + 월 50만 → 24만)', () => {
+    const r = plan(noProfile({ monthlyRentManwon: '50' }), { kind: 'monthly', amountWon: 10_000_000 });
+    expect(r.ok && r.requirements.costs?.brokerFeeOverrideWon).toBe(240_000);
+  });
+
+  it('설정이 없으면 자동 계산을 하지 않는다 (기존 동작 유지)', () => {
+    const r = buildFinancePlan(noProfile(), sale);
+    expect(r.ok && r.requirements.costs?.brokerFeeOverrideWon).toBeUndefined();
   });
 });

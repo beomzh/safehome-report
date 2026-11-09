@@ -13,7 +13,7 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
-    # 현재는 환경 변수가 필요 없다. LLM·공공데이터 연동이 붙으면 .env 로 주입한다
+    # 공공데이터 키·LLM 설정은 .env 로 런타임에만 주입한다 (없어도 기동되고 해당 기능만 안내 메시지를 보여준다)
     env_file:
       - path: .env
         required: false
