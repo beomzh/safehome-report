@@ -1,0 +1,143 @@
+import { describe, expect, it } from 'vitest';
+import { LOAN_PRODUCTS, loansFor } from '../../src/web/loans';
+import {
+  daysSince,
+  isStale,
+  LOAN_RATES,
+  loanRateInfoSchema,
+  rateInfoFor,
+  STALE_AFTER_DAYS,
+} from '../../src/web/loanRates';
+
+const base = {
+  productId: 'x',
+  rateType: '변동금리',
+  range: { minPercent: 2, maxPercent: 3 },
+  adjustments: [],
+  notCovered: [],
+  source: { name: '공식', url: 'https://nhuf.molit.go.kr/a', checkedAt: '2026-11-09' },
+};
+
+describe('금리 데이터 파일', () => {
+  it('스키마를 통과하고 모든 항목의 상품 id 가 대출 종류 목록에 있다', () => {
+    const ids = new Set(LOAN_PRODUCTS.map((p) => p.id));
+    for (const p of LOAN_RATES.products) expect(ids.has(p.productId)).toBe(true);
+  });
+
+  it('상품 id 가 중복되지 않는다', () => {
+    const ids = LOAN_RATES.products.map((p) => p.productId);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('모든 출처는 공식 사이트(https)이고 확인일이 있다', () => {
+    const hosts = new Set(LOAN_RATES.products.map((p) => new URL(p.source.url).hostname));
+    for (const h of hosts)
+      expect(['nhuf.molit.go.kr', 'www.hf.go.kr', 'hf.go.kr', 'portal.kfb.or.kr']).toContain(h);
+    for (const p of LOAN_RATES.products) expect(p.source.checkedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it('확인하지 못한 칸별 표는 notCovered 로 밝혀 둔다 (일반 버팀목·신혼·디딤돌)', () => {
+    for (const id of ['buteommok', 'newlywed-jeonse', 'didimdol']) {
+      expect(rateInfoFor(id)?.notCovered.join(' ')).toContain('칸 금리표');
+    }
+  });
+
+  it('은행 상품은 실제 대출금리를 확인하지 못했다고 밝힌다 (기준금리만 제공)', () => {
+    for (const id of ['bank-jeonse', 'bank-mortgage']) {
+      const info = rateInfoFor(id);
+      expect(info?.benchmarks?.length).toBeGreaterThan(0);
+      expect(info?.range).toBeUndefined();
+      expect(info?.notCovered.join(' ')).toContain('확인하지 못했습니다');
+    }
+  });
+
+  it('금리를 확인하지 못한 상품(월세 대출)은 데이터가 없어 화면이 안내 문구를 쓴다', () => {
+    expect(rateInfoFor('monthly-rent-loan')).toBeUndefined();
+  });
+
+  it('전세·월세·매매 각각에 금리 안내가 하나 이상 있다 (월세 제외 전세·매매)', () => {
+    for (const kind of ['jeonse', 'sale'] as const) {
+      expect(loansFor(kind).some((p) => rateInfoFor(p.id))).toBe(true);
+    }
+  });
+});
+
+describe('확인한 값 (2026-11-09, 공식 페이지)', () => {
+  it('청년전용 버팀목: 소득 구간별 2.2 / 2.5 / 2.9 / 3.3', () => {
+    expect(rateInfoFor('youth-buteommok')?.table?.rows.map((r) => r.percent)).toEqual([2.2, 2.5, 2.9, 3.3]);
+  });
+
+  it('보금자리론: 공시일 2026-11-09, 아낌e 10~50년 5.00~5.30', () => {
+    const t = rateInfoFor('bogeumjari')?.termTable;
+    expect(t?.publishedAt).toBe('2026-11-09');
+    expect(t?.terms).toEqual([10, 15, 20, 30, 40, 50]);
+    expect(t?.series.find((s) => s.name.includes('아낌e'))?.percents).toEqual([
+      5.0, 5.1, 5.15, 5.2, 5.25, 5.3,
+    ]);
+  });
+
+  it('보금자리론: 공식 설명대로 u-보금자리론은 아낌e 보다 모든 만기에서 0.1%p 높다', () => {
+    const t = rateInfoFor('bogeumjari')!.termTable!;
+    const a = t.series.find((s) => s.name.includes('아낌e'))!.percents;
+    const u = t.series.find((s) => s.name.startsWith('u-'))!.percents;
+    u.forEach((v, i) => expect(Math.round((v - a[i]!) * 100) / 100).toBe(0.1));
+  });
+
+  it('COFIX: 공시 2026-10-15 신규취급액 3.43 / 잔액 3.15 / 신 잔액 2.79', () => {
+    const b = rateInfoFor('bank-mortgage')!.benchmarks!;
+    expect(b.map((x) => x.percent)).toEqual([3.43, 3.15, 2.79]);
+    expect(b.every((x) => x.publishedAt === '2026-10-15')).toBe(true);
+  });
+
+  it('주택도시기금 금리 범위: 버팀목 2.5~3.5, 신혼부부 1.9~3.3, 디딤돌 2.85~4.15', () => {
+    expect(rateInfoFor('buteommok')?.range).toEqual({ minPercent: 2.5, maxPercent: 3.5 });
+    expect(rateInfoFor('newlywed-jeonse')?.range).toEqual({ minPercent: 1.9, maxPercent: 3.3 });
+    expect(rateInfoFor('didimdol')?.range).toEqual({ minPercent: 2.85, maxPercent: 4.15 });
+  });
+});
+
+describe('스키마가 잘못된 데이터를 거부한다', () => {
+  it('정상 샘플은 통과', () => {
+    expect(loanRateInfoSchema.safeParse(base).success).toBe(true);
+  });
+  it('공식 도메인이 아닌 출처(블로그 등)는 거부', () => {
+    expect(
+      loanRateInfoSchema.safeParse({ ...base, source: { ...base.source, url: 'https://blog.example.com/x' } })
+        .success,
+    ).toBe(false);
+  });
+  it('https 가 아니면 거부', () => {
+    expect(
+      loanRateInfoSchema.safeParse({ ...base, source: { ...base.source, url: 'http://nhuf.molit.go.kr/a' } })
+        .success,
+    ).toBe(false);
+  });
+  it.each([0, -1, 16, 250])('범위를 벗어난 금리 %s 는 거부', (v) => {
+    expect(loanRateInfoSchema.safeParse({ ...base, range: { minPercent: v, maxPercent: 3 } }).success).toBe(
+      false,
+    );
+  });
+  it('최소가 최대보다 크면 거부', () => {
+    expect(loanRateInfoSchema.safeParse({ ...base, range: { minPercent: 4, maxPercent: 3 } }).success).toBe(
+      false,
+    );
+  });
+  it('만기 수와 금리 수가 다른 표는 거부', () => {
+    const termTable = { publishedAt: '2026-11-09', terms: [10, 20], series: [{ name: 'a', percents: [5] }] };
+    expect(loanRateInfoSchema.safeParse({ ...base, range: undefined, termTable }).success).toBe(false);
+  });
+  it('금리 정보가 하나도 없으면 거부', () => {
+    expect(loanRateInfoSchema.safeParse({ ...base, range: undefined }).success).toBe(false);
+  });
+});
+
+describe('확인일 경과 경고', () => {
+  it('경과 일수 계산', () => {
+    expect(daysSince('2026-11-09', '2026-11-09')).toBe(0);
+    expect(daysSince('2026-10-01', '2026-11-09')).toBe(39);
+  });
+  it(`${STALE_AFTER_DAYS}일까지는 정상, 넘으면 오래된 정보`, () => {
+    expect(isStale('2026-10-05', '2026-11-09')).toBe(false); // 35일
+    expect(isStale('2026-10-04', '2026-11-09')).toBe(true); // 36일
+  });
+});
