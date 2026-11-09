@@ -10,7 +10,7 @@ interface Props {
   kind: Kind;
 }
 
-type TextKey = Exclude<keyof FinanceFormState, 'enabled'>;
+type TextKey = Exclude<keyof FinanceFormState, 'enabled' | 'autoCosts'>;
 
 export function FinanceFields({ fin, setFin, kind }: Props) {
   const isSale = kind === 'sale';
@@ -92,10 +92,24 @@ export function FinanceFields({ fin, setFin, kind }: Props) {
           </fieldset>
 
           <fieldset>
-            <legend>부대비용 (입력하지 않으면 0원으로 계산)</legend>
-            {isSale && text('acquisitionTaxPercent', '취득세 등 비율 (%)', '예: 1.1')}
+            <legend>세금·수수료 (취득세·중개보수)</legend>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={fin.autoCosts}
+                onChange={(e) => setFin((f) => ({ ...f, autoCosts: e.target.checked }))}
+              />
+              법정 요율로 자동 계산 (아래에 직접 입력한 값이 있으면 그 값을 사용)
+            </label>
+            <p className="hint">
+              취득세는 일반 세율 기준이고 다주택·조정대상지역 중과와 감면은 반영하지 않습니다. 중과를 받는다면
+              세율을 직접 입력하세요. 보유세는 계산하지 않습니다. 요율표는 잠정값입니다.
+            </p>
+            {kind === 'monthly' && text('monthlyRentManwon', '월세 (만원, 중개보수 환산용)', '예: 80')}
+            {isSale &&
+              text('acquisitionTaxPercent', '취득세 등 비율 (%, 직접 입력 시 자동 계산 대신 사용)', '예: 8')}
             <div className="row2">
-              {text('brokerFeePercent', '중개보수 요율 (%)', '예: 0.4')}
+              {text('brokerFeePercent', '중개보수 요율 (%, 직접 입력 시 자동 계산 대신 사용)', '예: 0.4')}
               {text('brokerFeeOverrideManwon', '또는 중개보수 금액 (만원)', '입력 시 요율보다 우선')}
             </div>
             {isJeonse && text('guaranteeFeePercent', '전세보증보험료 요율 (%)', '예: 0.126')}

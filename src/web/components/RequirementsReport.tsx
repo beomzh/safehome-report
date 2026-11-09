@@ -17,11 +17,13 @@ export function RequirementsReport({
   kind,
   amountWon,
   grade,
+  costNotes = [],
 }: {
   requirements: Requirements;
   kind: Kind;
   amountWon: number;
   grade: Grade;
+  costNotes?: string[];
 }) {
   const top = r.rows[0];
   const subject = kind === 'sale' ? `매매가 ${formatWon(amountWon)}` : `보증금 ${formatWon(amountWon)}`;
@@ -64,6 +66,19 @@ export function RequirementsReport({
           </tr>
         </tbody>
       </table>
+
+      {costNotes.length > 0 && (
+        <details className="rule-section">
+          <summary>
+            세금·수수료 계산 근거 <span className="count">{costNotes.length}</span>
+          </summary>
+          <ul className="evidence">
+            {costNotes.map((n) => (
+              <li key={n}>{n}</li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       <h3>대출을 얼마나 받느냐에 따라</h3>
       <div className="table-wrap">

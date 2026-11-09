@@ -24,5 +24,39 @@
     "areaToleranceM2": 3,
     "status": "provisional",
     "source": "초기 잠정값(최근 12개월, 최소 3건, 면적 ±3㎡). 실거래 데이터로 검증 후 확정"
+  },
+  "acquisitionTax": {
+    "lowerLimitWon": 600000000,
+    "upperLimitWon": 900000000,
+    "lowRatePercent": 1,
+    "highRatePercent": 3,
+    "localEducationShareOfRate": 0.1,
+    "ruralSpecialAboveAreaM2": 85,
+    "ruralSpecialPercent": 0.2,
+    "status": "provisional",
+    "source": "지방세법 제11조 제1항 제8호 표준세율(법 조문 사본으로 확인, 해당 사본의 최근 개정 표기 2023.3.14). 지방교육세·농어촌특별세는 2차 자료 기준. 중과(다주택·조정대상지역)·감면은 미반영. 2026년 개정 여부는 법제처 원문으로 확인 필요"
+  },
+  "brokerage": {
+    "sale": [
+      { "underWon": 50000000, "ratePercent": 0.6, "capWon": 250000 },
+      { "underWon": 200000000, "ratePercent": 0.5, "capWon": 800000 },
+      { "underWon": 900000000, "ratePercent": 0.4 },
+      { "underWon": 1200000000, "ratePercent": 0.5 },
+      { "underWon": 1500000000, "ratePercent": 0.6 },
+      { "ratePercent": 0.7 }
+    ],
+    "lease": [
+      { "underWon": 50000000, "ratePercent": 0.5, "capWon": 200000 },
+      { "underWon": 100000000, "ratePercent": 0.4, "capWon": 300000 },
+      { "underWon": 600000000, "ratePercent": 0.3 },
+      { "underWon": 1200000000, "ratePercent": 0.4 },
+      { "underWon": 1500000000, "ratePercent": 0.5 },
+      { "ratePercent": 0.6 }
+    ],
+    "monthlyRentMultiplier": 100,
+    "monthlyRentMultiplierBelowThreshold": 70,
+    "monthlyRentThresholdWon": 50000000,
+    "status": "provisional",
+    "source": "경기도·수원시 공공 안내와 2차 자료의 상한 요율표(구간은 일치, 일부 한도액은 자료마다 다름). 서울시 조례 원문은 확인하지 못함. 부가세 별도, 15억 이상·9억 초과 매매는 협의 가능"
   }
 }

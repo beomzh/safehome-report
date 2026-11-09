@@ -11,6 +11,13 @@ const sourcedSchema = z.object({
   source: z.string().min(1),
 });
 
+/** 중개보수 구간. underWon 미만이면 이 구간(마지막 구간은 underWon 없음) */
+const brokerageBandSchema = z.object({
+  underWon: z.number().int().positive().optional(),
+  ratePercent: z.number().positive(),
+  capWon: z.number().int().positive().optional(),
+});
+
 export const rulesConfigSchema = z.object({
   rulesetVersion: z.number().int().positive(),
   effectiveFrom: isoDateSchema,
@@ -34,6 +41,29 @@ export const rulesConfigSchema = z.object({
     minSamples: z.number().int().positive(),
     /** 목표 전용면적 ± 이 값(㎡) 안의 거래만 사용 */
     areaToleranceM2: z.number().nonnegative(),
+  }),
+  /** 주택 유상취득 취득세 표준세율과 부가세 (지방세법 제11조 제1항 제8호). 중과는 계산하지 않는다 */
+  acquisitionTax: sourcedSchema.extend({
+    /** 이 금액 이하는 lowRatePercent */
+    lowerLimitWon: z.number().int().positive(),
+    /** 이 금액 이상은 highRatePercent. 사이 구간은 선형 산식 */
+    upperLimitWon: z.number().int().positive(),
+    lowRatePercent: z.number().positive(),
+    highRatePercent: z.number().positive(),
+    /** 지방교육세 = 취득세율의 이 비율(표준세율의 50%에 20%를 곱한 값 = 10%) */
+    localEducationShareOfRate: z.number().positive(),
+    /** 이 전용면적(㎡)을 초과하면 농어촌특별세 */
+    ruralSpecialAboveAreaM2: z.number().positive(),
+    ruralSpecialPercent: z.number().nonnegative(),
+  }),
+  /** 중개보수 상한 요율표 (시·도 조례로 정해지므로 지역별로 다를 수 있다) */
+  brokerage: sourcedSchema.extend({
+    sale: z.array(brokerageBandSchema).min(1),
+    lease: z.array(brokerageBandSchema).min(1),
+    /** 월세 환산: 보증금 + 월세 × multiplier. 환산액이 thresholdWon 미만이면 multiplierBelowThreshold 를 쓴다 */
+    monthlyRentMultiplier: z.number().positive(),
+    monthlyRentMultiplierBelowThreshold: z.number().positive(),
+    monthlyRentThresholdWon: z.number().int().positive(),
   }),
 });
 export type RulesConfig = z.infer<typeof rulesConfigSchema>;
