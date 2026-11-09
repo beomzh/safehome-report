@@ -93,7 +93,8 @@ function gapType(purpose: string, text: string): GapEntryType | 'owner_origin' |
   if (p.includes('소유권보존')) return 'owner_origin';
   if (p.includes('가등기')) return 'other';
   if (p.includes('신탁') || (p.includes('소유권이전') && /신탁원부|수탁자/.test(text))) return 'trust';
-  if (p.includes('소유권이전')) return 'ownership_transfer';
+  // 집합건물은 '소유권이전', 건물·토지 공유는 '공유자전원지분전부이전' 처럼 적는다 (실제 열람본 형식)
+  if (p.includes('소유권이전') || /지분전부이전|지분이전|전원지분/.test(p)) return 'ownership_transfer';
   if (p.includes('가압류')) return 'provisional_seizure';
   if (p.includes('가처분')) return 'provisional_disposition';
   if (p.includes('경매개시결정') || p.includes('임의경매') || p.includes('강제경매')) return 'auction_start';

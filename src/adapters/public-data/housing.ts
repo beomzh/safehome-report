@@ -1,7 +1,6 @@
 /**
- * 매매 실거래 API 종류. 아파트만 실제 응답으로 확인했다.
- * 연립다세대·오피스텔은 엔드포인트가 존재하는 것까지만 확인했고(키 미등록 시 오류 코드 30),
- * 응답 필드명은 공식 명세 기준 추정이라 실제 응답으로 검증되지 않았다.
+ * 매매 실거래 API 종류. 아파트·오피스텔은 실제 응답으로 필드를 확인했다(오피스텔: 2026-11-09, offiNm).
+ * 연립다세대는 활용신청 전이라(오류 코드 30) 응답 필드명이 공식 명세 기준 추정이다.
  */
 export const HOUSING_TYPES = ['apt', 'rowhouse', 'officetel'] as const;
 export type HousingType = (typeof HOUSING_TYPES)[number];
@@ -39,7 +38,7 @@ export const HOUSING: Record<HousingType, HousingSpec> = {
     endpoint: `${BASE}/RTMSDataSvcOffiTrade/getRTMSDataSvcOffiTrade`,
     nameTag: 'offiNm',
     applyUrl: 'https://www.data.go.kr/tcs/dss/selectDataSetList.do?keyword=오피스텔 매매 실거래가',
-    verified: false,
+    verified: true,
   },
 };
 

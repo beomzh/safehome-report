@@ -8,6 +8,7 @@
 
 ### Added
 
+- **오피스텔 시세 조회 검증 완료·등기부 파서 형식 보강**: 활용신청 승인 후 오피스텔 매매 API를 실제로 호출해 필드(`offiNm`, `dealAmount`, `excluUseAr`)가 맞는 것을 확인하고 실제 응답을 계약 테스트로 추가했습니다(신뢰도는 계속 낮음으로 입력). 등기부 파서는 실제 열람본("현재 유효사항")에 나온 `공유자전원지분전부이전` 등기목적을 소유권 이전으로 읽고 "기록사항 없음" 을구를 처리합니다. 공개 API 변경 없음. — 관련 파일: `src/adapters/public-data/housing.ts`, `src/core/registry/parse.ts`, `tests/`
 - **MIT 라이선스**: `LICENSE` 파일을 추가하고 `package.json` 의 `license` 를 `UNLICENSED` 에서 `MIT` 로 바꿨습니다. 이전에는 라이선스가 없어 재사용 허가가 정해지지 않았습니다. 저작권자 표기는 GitHub 계정명(`beomzh`)이며 실명으로 바꾸려면 `LICENSE` 한 줄만 고치면 됩니다. 공개 API 변경 없음. — 관련 파일: `LICENSE`, `package.json`, `README.md`
 - **빌라(연립·다세대)·오피스텔 시세 조회 (미검증)**: 시세 조회에서 주택 유형을 고를 수 있습니다. 엔드포인트는 존재하지만 현재 키에는 활용신청이 되어 있지 않아(오류 30) 실제 응답으로 필드를 확인하지 못했습니다. 건물명 필드(`mhouseNm`, `offiNm`)는 추정이라 틀리면 "거래 없음"으로 보입니다. 이 유형은 항상 신뢰도 낮음으로 입력하고, 키에 권한이 없으면 활용신청 안내를 보여줍니다. 다가구·단독은 지원하지 않습니다. 공개 API 변경: `GET /api/market` 에 선택 쿼리 `housing=apt|rowhouse|officetel`(기본 apt) 추가. — 관련 파일: `src/adapters/public-data/housing.ts`, `tradeService.ts`, `src/web/components/MarketLookup.tsx`, `docs/public-data-api.md`
 - **재산세 계산 (매매)**: 공시가격(만원)을 입력하면 공정시장가액비율(일반 60%, 1세대 1주택 공시가 3억 이하 43%·6억 이하 44%·초과 45%)로 과세표준을 구해 누진세율(0.1~0.4%, 1세대 1주택 특례 0.05~0.35%)과 도시지역분 0.14%, 지방교육세 20%를 더한 연간 재산세를 세금 근거 패널에 안내합니다. 필요 자금에는 넣지 않습니다. 세율표는 세무 칼럼 사이트 기재 내용(2차 자료)이라 잠정값이고, 세부담상한·조례 탄력세율·소방분은 반영하지 않으며 종합부동산세는 세제 개편이 진행 중이라 계산하지 않습니다. 공개 API 변경 없음. — 관련 파일: `src/core/finance/taxes.ts`, `rules.config/rules.v1.json`, `src/web/financeForm.ts`, `src/web/components/FinanceFields.tsx`
