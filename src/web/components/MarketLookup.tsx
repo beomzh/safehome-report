@@ -6,6 +6,7 @@ import type { FormState } from '../form';
 import { formatWon } from '../present';
 
 interface Props {
+  form: FormState;
   setForm: Dispatch<SetStateAction<FormState>>;
 }
 
@@ -22,10 +23,10 @@ interface LookupResponse {
  * 아파트 실거래가(공공데이터포털)로 시세를 조회해 시세 입력칸을 채운다.
  * 서버로 보내는 값은 법정동코드·전용면적·단지명뿐이며 성명·금액·재무 정보는 보내지 않는다.
  */
-export function MarketLookup({ setForm }: Props) {
-  const [lawdCd, setLawdCd] = useState('');
-  const [areaM2, setAreaM2] = useState('');
-  const [complexName, setComplexName] = useState('');
+export function MarketLookup({ form, setForm }: Props) {
+  const lawdCd = form.lookupLawdCd;
+  const areaM2 = form.lookupAreaM2;
+  const complexName = form.lookupComplexName;
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'warn' | 'error'; text: string } | null>(null);
 
@@ -88,7 +89,7 @@ export function MarketLookup({ setForm }: Props) {
             autoComplete="off"
             placeholder="예: 11680"
             value={lawdCd}
-            onChange={(e) => setLawdCd(e.target.value)}
+            onChange={(e) => setForm((f) => ({ ...f, lookupLawdCd: e.target.value }))}
           />
         </label>
         <label className="field">
@@ -98,7 +99,7 @@ export function MarketLookup({ setForm }: Props) {
             autoComplete="off"
             placeholder="예: 84.99"
             value={areaM2}
-            onChange={(e) => setAreaM2(e.target.value)}
+            onChange={(e) => setForm((f) => ({ ...f, lookupAreaM2: e.target.value }))}
           />
         </label>
       </div>
@@ -108,7 +109,7 @@ export function MarketLookup({ setForm }: Props) {
           autoComplete="off"
           placeholder="실거래 목록의 단지명과 같게"
           value={complexName}
-          onChange={(e) => setComplexName(e.target.value)}
+          onChange={(e) => setForm((f) => ({ ...f, lookupComplexName: e.target.value }))}
         />
       </label>
       <button type="button" className="btn-secondary" onClick={lookup} disabled={busy}>

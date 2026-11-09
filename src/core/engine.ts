@@ -4,6 +4,7 @@ import type { Rule } from './rules/helpers';
 import { ltvRatio, mortgageSum } from './rules/mortgage';
 import { frequentTransfer, ownerMismatch, rightsRestriction, trustRegistered } from './rules/ownership';
 import { priorityDate } from './rules/priority';
+import { depositToMarketRatio } from './rules/ratio';
 import { riskInputSchema } from './types';
 import type { Grade, RiskReport, RuleResult } from './types';
 
@@ -15,6 +16,7 @@ export const RULES: readonly Rule[] = [
   frequentTransfer,
   mortgageSum,
   ltvRatio,
+  depositToMarketRatio,
   priorityDate,
   taxChecklist,
 ];

@@ -39,7 +39,7 @@ function Section({ title, items, open }: { title: string; items: RuleResult[]; o
 export function ReportView({ report, input }: { report: RiskReport; input: RiskInput }) {
   const info = gradeInfo(report.grade);
   const groups = groupResults(report.results);
-  const mode = input.registry ? '전체 분석 (등기부 정보 포함)' : '간이 분석 (등기부 정보 없음)';
+  const mode = input.registry ? '전체 분석 (등기부 정보 포함)' : '사전 점검 (등기부 정보 없음)';
 
   return (
     <section className="card report" aria-labelledby="report-title" aria-live="polite">

@@ -14,11 +14,13 @@ interface Props {
   extra?: ReactNode;
   /** 시세 입력 아래에 렌더링할 섹션 (실거래가 조회 등) */
   marketSlot?: ReactNode;
+  /** 폼 맨 위에 렌더링할 섹션 (매물 설명 붙여넣기 등) */
+  topSlot?: ReactNode;
 }
 
 const KIND_LABEL: Record<Kind, string> = { jeonse: '전세', monthly: '월세', sale: '매매' };
 
-export function InputForm({ form, setForm, errors, onSubmit, onReset, extra, marketSlot }: Props) {
+export function InputForm({ form, setForm, errors, onSubmit, onReset, extra, marketSlot, topSlot }: Props) {
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
   const isSale = form.kind === 'sale';
@@ -30,6 +32,8 @@ export function InputForm({ form, setForm, errors, onSubmit, onReset, extra, mar
 
   return (
     <form className="card form" onSubmit={submit} noValidate>
+      {topSlot}
+
       <h2>1. 계약 정보</h2>
 
       <fieldset>
@@ -85,7 +89,8 @@ export function InputForm({ form, setForm, errors, onSubmit, onReset, extra, mar
 
       <h2>2. 시세 (선택)</h2>
       <p className="hint">
-        공공 실거래가 조회 기능이 붙기 전까지는 직접 입력합니다. 없으면 시세 기반 룰은 판단 보류가 됩니다.
+        아래 "실거래가로 시세 조회"로 채우거나 직접 입력합니다. 시세가 없으면 시세 기반 룰은 판단 보류가
+        됩니다.
       </p>
       <div className="row2">
         <label className="field">

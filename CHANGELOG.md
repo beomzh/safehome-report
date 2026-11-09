@@ -1,3 +1,32 @@
+[2026-11-09 19:20]
+- [Added] - src/web/loans.ts `LOAN_PRODUCTS` `loansFor`: 계약 유형별 대출 상품 종류(버팀목·청년전용·신혼·신생아·시중은행 전세·월세 관련·디딤돌·보금자리론·시중은행 주담대)와 매물 점검 연계 확인 포인트. 한도·금리·소득 기준 같은 낡기 쉬운 숫자는 담지 않음
+- [Added] - src/web/components/LoanCatalog.tsx: 분석 결과 아래에 대출 종류 카드 표시, 위험·주의 등급의 전세 매물에는 보증 거절·한도 축소 가능성 경고
+- [Added] - tests/web/loans.test.ts: 유형별 안내, 중복·누락, 숫자 미포함(금리·금액 패턴 금지) 테스트 5건
+- [Changed] - src/web/components/Analyzer.tsx, docs/ROADMAP.md: 대출 카드 연결과 진행 상태 갱신
+
+[2026-11-09 18:10]
+- [Added] - src/adapters/llm/provider.ts, openaiCompatible.ts: LLM 공급자 인터페이스와 OpenAI 호환(Responses·Chat Completions) 공급자. 구조화 출력(JSON Schema)+zod 검증, 재시도(4xx 제외), 타임아웃, 주소·키·모델명이 오류 메시지에 노출되지 않도록 비식별, 환경변수 팩토리
+- [Added] - src/adapters/llm/listing.ts: 매물 설명 항목 추출. 전화번호·이메일 제거, `<listing>` 구획 입력과 주입 방어 시스템 프롬프트, LLM 출력 범위 검증(`sanitizeListing`), 링크의 플랫폼·매물 번호 힌트 해석(링크 내용은 읽지 않음)
+- [Added] - src/app/api/listing/route.ts: LLM 항목 추출 서버 라우트 (LLM 미설정 시 503 안내, 텍스트·키는 로그에 남기지 않음)
+- [Added] - src/web/components/ListingImport.tsx: 링크·설명 붙여넣기, AI 추출, 결과 확인 후 입력칸 적용, 설명에 적힌 주의 문구 표시
+- [Changed] - src/web/form.ts, MarketLookup.tsx, InputForm.tsx, Analyzer.tsx: 시세 조회 입력을 폼 상태로 올려 추출 결과가 단지명·면적을 채우도록 연결, 리포트 모드 문구를 사전 점검으로 변경
+- [Added] - tests/llm/*.test.ts: 공급자(Responses·Chat, 재시도, 비식별, 환경변수)와 추출(PII 제거, 구획·주입, 범위 검증, URL 힌트) 테스트 29건
+- [Changed] - docs/adr/0005-llm-provider.md, docs/threat-model.md, docs/ROADMAP.md, README.md, .env.example: 실제 연동 결과(Responses API, Bearer 인증), 전송 범위, 주입 방어, 환경변수 설명 갱신
+
+[2026-11-09 18:10]
+- [Added] - src/adapters/llm/provider.ts, openaiCompatible.ts: LLM 공급자 인터페이스와 OpenAI 호환(Responses·Chat Completions) 공급자. 구조화 출력(JSON Schema)+zod 검증, 재시도(4xx 제외), 타임아웃, 주소·키·모델명이 오류 메시지에 노출되지 않도록 비식별, 환경변수 팩토리
+- [Added] - src/adapters/llm/listing.ts: 매물 설명 항목 추출. 전화번호·이메일 제거, `<listing>` 구획 입력과 주입 방어 시스템 프롬프트, LLM 출력 범위 검증(`sanitizeListing`), 링크의 플랫폼·매물 번호 힌트 해석(링크 내용은 읽지 않음)
+- [Added] - src/app/api/listing/route.ts: LLM 항목 추출 서버 라우트 (LLM 미설정 시 503 안내, 텍스트·키는 로그에 남기지 않음)
+- [Added] - src/web/components/ListingImport.tsx: 링크·설명 붙여넣기, AI 추출, 결과 확인 후 입력칸 적용, 설명에 적힌 주의 문구 표시
+- [Changed] - src/web/form.ts, MarketLookup.tsx, InputForm.tsx, Analyzer.tsx: 시세 조회 입력을 폼 상태로 올려 추출 결과가 단지명·면적을 채우도록 연결, 리포트 모드 문구를 사전 점검으로 변경
+- [Added] - tests/llm/*.test.ts: 공급자(Responses·Chat, 재시도, 비식별, 환경변수)와 추출(PII 제거, 구획·주입, 범위 검증, URL 힌트) 테스트 29건
+- [Changed] - docs/adr/0005-llm-provider.md, docs/threat-model.md, docs/ROADMAP.md, README.md, .env.example: 실제 연동 결과(Responses API, Bearer 인증), 전송 범위, 주입 방어, 환경변수 설명 갱신
+
+[2026-11-09 16:30]
+- [Added] - src/core/rules/ratio.ts `depositToMarketRatio`: 등기부 없이 보증금/시세 비율(R-RATIO-01)로 방문 전 사전 점검. 선순위를 모르는 하한값임을 근거에 명시하고, 기준 초과 시 등기부 없이도 red/yellow 판정 (등기부가 있으면 R-LTV-01 이 대신 판정)
+- [Changed] - src/core/engine.ts `RULES`: R-RATIO-01 등록
+- [Added] - tests/golden/pre-visit-ratio.test.ts: 70/80% 경계값, 하한값 안내, 시세 없음, 등기부 있음·매매 비적용, 판단 보류 테스트 8건
+
 [2026-11-09 15:40]
 - [Added] - src/adapters/public-data/aptTrade.ts `parseAptTradeXml` `PublicDataError`: 실제 응답 구조(쉼표 포함 만원 금액, 해제 표시, totalCount)로 아파트 매매 XML을 `TradeRecord`로 정규화하고 오류 코드(22 한도 초과 등)를 해석
 - [Added] - src/adapters/public-data/tradeService.ts `createTradeService` `monthsToFetch`: 키 인코딩 처리, 페이지네이션(최대 페이지 제한), 재시도(복구 불가 오류 제외), 타임아웃, 지역·월 단위 TTL 캐시, 여러 달 거래로 시세 추정

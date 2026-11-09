@@ -12,6 +12,8 @@ import { ChecklistPanel } from './ChecklistPanel';
 import { FinanceFields } from './FinanceFields';
 import { FinanceReport } from './FinanceReport';
 import { InputForm } from './InputForm';
+import { LoanCatalog } from './LoanCatalog';
+import { ListingImport } from './ListingImport';
 import { MarketLookup } from './MarketLookup';
 import { ReportView } from './ReportView';
 
@@ -69,7 +71,8 @@ export function Analyzer() {
         errors={errors}
         onSubmit={analyze}
         onReset={reset}
-        marketSlot={<MarketLookup setForm={setForm} />}
+        topSlot={<ListingImport setForm={setForm} />}
+        marketSlot={<MarketLookup form={form} setForm={setForm} />}
         extra={<FinanceFields fin={fin} setFin={setFin} kind={form.kind} />}
       />
       <div className="results">
@@ -77,6 +80,7 @@ export function Analyzer() {
           <>
             <ReportView report={result.report} input={result.input} />
             {result.finance && <FinanceReport result={result.finance} grade={result.report.grade} />}
+            <LoanCatalog kind={result.input.contract.kind} grade={result.report.grade} />
             <ChecklistPanel kind={result.input.contract.kind} />
           </>
         ) : (
