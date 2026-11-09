@@ -52,6 +52,7 @@
 ## M6 — 패키징·배포
 
 - [x] Dockerfile(non-root, 멀티 스테이지), compose(127.0.0.1 바인딩·읽기 전용 파일시스템·헬스체크)
+- [x] CI에 `npm run build`와 Docker 이미지 빌드·기동·non-root 스모크 테스트 추가
 - [ ] compose 프로파일(LLM 등), `.env` 가이드, 데이터 흐름 문서, 멀티 아키텍처 이미지
 - [ ] Docker 로컬 빌드·실행 검증, trivy·의존성 감사·secret-scan, 설치 10분 검증
 
