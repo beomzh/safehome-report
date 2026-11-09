@@ -1,3 +1,17 @@
+[2026-11-06 11:40]
+- [Added] - src/web/financeForm.ts `buildAffordabilityInput` `parsePercent`: 대출·자금 폼 입력을 검증해 계산 입력으로 변환 (만원→원, 년→개월, 기본값 없이 필수값 검증, 담보가치 규칙)
+- [Added] - src/web/components/FinanceFields.tsx, FinanceReport.tsx: 재무·대출 기준값·부대비용 입력과 필요 자금·대출 한도·과부족·월 상환 리포트 (위험 등급이 red 이면 확인 우선 안내)
+- [Changed] - src/web/components/Analyzer.tsx, InputForm.tsx: 분석 시 자금 계획 계산을 함께 실행하고 `extra` 슬롯으로 입력 섹션 연결, 초기화 시 재무 입력도 삭제
+- [Added] - tests/web/financeForm.test.ts: 변환·필수값·담보가치·부대비용·계약금 시점·core 연동 테스트 19건
+- [Changed] - src/app/globals.css, docs/ROADMAP.md, docs/adr/0007-finance-assumptions-user-provided.md: 표 스타일 추가, 진행 상태와 UI 가정 기록
+
+[2026-11-06 09:50]
+- [Added] - src/core/finance/money.ts `mulPercent` `monthlyPayment` `principalFromAnnualPayment`: BigInt 기반 금액×비율(내림)과 원리금균등 상환액·역산 원금 계산 (부동소수점·정수 범위 초과 방지)
+- [Added] - src/core/finance/types.ts: 재무 프로필·대출 기준값·부대비용·계산 입력 zod 스키마 (대출 기준값은 기본값 없이 필수 입력)
+- [Added] - src/core/finance/affordability.ts `evaluateAffordability` `estimateLoanScenario` `buildFundingPlan`: LTV·DSR·상품 한도 중 최솟값과 병목, 기준·보수 시나리오, 필요 자금 항목, 자산 대비 과부족, 시점별 현금, 월 상환액·상환 비율 계산
+- [Added] - tests/golden/finance.test.ts: 한도 병목·선순위 차감·동률·보수 시나리오·전세/매매 항목·계약금 시점·입력 검증 테스트
+- [Added] - docs/adr/0007-finance-assumptions-user-provided.md: 규제·세금 기준값을 사용자 입력으로 두고 앱은 계산만 하는 결정 기록
+- [Changed] - docs/PRD.md, docs/ROADMAP.md: §5.5·§5.6 기준값을 설정 파일 관리에서 사용자 입력으로 정정, 로드맵 진행 상태 갱신
 [2026-11-04 18:10]
 - [Added] - package.json, next.config.ts, tsconfig.json: Next.js(App Router) 의존성과 dev/build/start 스크립트, standalone 출력 설정
 - [Added] - src/web/form.ts `buildRiskInput` `parseManwon`: 만원 단위 폼 입력을 검증해 원 단위 정수 RiskInput 으로 변환 (소수·음수·잘못된 날짜 거부)
