@@ -17,5 +17,12 @@
     "minCount": 3,
     "status": "provisional",
     "source": "초기 잠정값. 도메인 전문가 검토 후 확정"
+  },
+  "marketEstimate": {
+    "windowMonths": 12,
+    "minSamples": 3,
+    "areaToleranceM2": 3,
+    "status": "provisional",
+    "source": "초기 잠정값(최근 12개월, 최소 3건, 면적 ±3㎡). 실거래 데이터로 검증 후 확정"
   }
 }
