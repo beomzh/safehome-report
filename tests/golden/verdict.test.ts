@@ -78,4 +78,9 @@ describe('evaluateVerdict — 기준표 C1~C6', () => {
     const r = evaluateVerdict(base({ affordability: afford(100_000_000, 50_000_000) }), config);
     expect(r.criteria.every((c) => !/원|만/.test(c.facts))).toBe(true);
   });
+
+  it('규칙 등급은 영어 대신 한글로 LLM 에 전달한다', () => {
+    const r = evaluateVerdict(base({ grade: 'yellow' }), config);
+    expect(byId(r, 'C6').facts).toBe('규칙 점검 등급 주의');
+  });
 });

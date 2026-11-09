@@ -46,6 +46,13 @@ export const VERDICT_LABEL: Record<Verdict, string> = {
   avoid: '보러 가지 않음 권장',
 };
 
+const GRADE_WORD: Record<Grade, string> = {
+  green: '위험 신호 없음',
+  yellow: '주의',
+  red: '위험',
+  inconclusive: '판단 보류',
+};
+
 export const STATUS_LABEL: Record<CriterionStatus, string> = {
   pass: '충족',
   caution: '주의',
@@ -225,7 +232,7 @@ export function evaluateVerdict(input: VerdictInput, config: RulesConfig): Verdi
       red: '위험 신호가 있습니다.',
       inconclusive: '판단 보류 항목이 있습니다.',
     }[input.grade],
-    facts: `규칙 점검 등급 ${input.grade}`,
+    facts: `규칙 점검 등급 ${GRADE_WORD[input.grade]}`,
     rule: '위험 신호 없음이면 충족, 주의·판단 보류면 주의, 위험이면 미달',
   });
 
