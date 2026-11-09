@@ -1,0 +1,177 @@
+{
+  "checkedAt": "2026-11-09",
+  "products": [
+    {
+      "productId": "buteommok",
+      "rateType": "변동금리 (국토교통부 고시)",
+      "range": { "minPercent": 2.5, "maxPercent": 3.5 },
+      "adjustments": [
+        "대상 주택이 지방에 있으면 0.2%p 인하",
+        "우대금리 적용 상한 0.5%p (기초생활수급권자·차상위계층·한부모가구 1.0%p, 다자녀가구 0.7%p)",
+        "우대 적용 후 최종금리가 연 1.0% 미만이면 1.0% 적용"
+      ],
+      "notCovered": [
+        "부부합산 연소득·임차보증금 구간별 칸 금리표는 페이지에서 추출하지 못했습니다. 공식 페이지 표를 확인하세요."
+      ],
+      "source": {
+        "name": "주택도시기금 — 버팀목전세자금 대출안내",
+        "url": "https://nhuf.molit.go.kr/FP/FP05/FP0502/FP05020101.jsp",
+        "checkedAt": "2026-11-09"
+      }
+    },
+    {
+      "productId": "youth-buteommok",
+      "rateType": "변동금리 (국토교통부 고시)",
+      "table": {
+        "basis": "부부합산 연소득 (임차보증금 3억원 이하 기준)",
+        "rows": [
+          { "label": "2천만원 이하", "percent": 2.2 },
+          { "label": "2천만원 초과 ~ 4천만원 이하", "percent": 2.5 },
+          { "label": "4천만원 초과 ~ 6천만원 이하", "percent": 2.9 },
+          { "label": "6천만원 초과 ~ 7.5천만원 이하", "percent": 3.3 }
+        ]
+      },
+      "adjustments": [
+        "대상 주택이 지방에 있으면 0.2%p 인하",
+        "우대금리 적용 상한 0.5%p (기초생활수급권자·차상위계층·한부모가구 1.0%p, 다자녀가구 0.7%p)",
+        "우대 적용 후 최종금리가 연 1.0% 미만이면 1.0% 적용"
+      ],
+      "notCovered": [],
+      "source": {
+        "name": "주택도시기금 — 청년전용 버팀목전세자금 대출안내",
+        "url": "https://nhuf.molit.go.kr/FP/FP05/FP0502/FP05020301.jsp",
+        "checkedAt": "2026-11-09"
+      }
+    },
+    {
+      "productId": "newlywed-jeonse",
+      "rateType": "변동금리 (국토교통부 고시)",
+      "range": { "minPercent": 1.9, "maxPercent": 3.3 },
+      "adjustments": [
+        "대상 주택이 지방에 있으면 0.2%p 인하",
+        "우대금리 적용 상한 0.5%p (다자녀가구 0.7%p)",
+        "우대 적용 후 최종금리가 연 1.0% 미만이면 1.0% 적용"
+      ],
+      "notCovered": [
+        "부부합산 연소득·임차보증금 구간별 칸 금리표는 페이지에서 추출하지 못했습니다. 공식 페이지 표를 확인하세요.",
+        "신혼부부전용 전세자금 상품 기준입니다. 신생아 가구 대상 상품은 확인하지 못했습니다."
+      ],
+      "source": {
+        "name": "주택도시기금 — 신혼부부전용 전세자금 대출안내",
+        "url": "https://nhuf.molit.go.kr/FP/FP05/FP0502/FP05020401.jsp",
+        "checkedAt": "2026-11-09"
+      }
+    },
+    {
+      "productId": "didimdol",
+      "rateType": "변동금리 또는 고정금리 (선택 방식에 따라 가산)",
+      "range": { "minPercent": 2.85, "maxPercent": 4.15 },
+      "adjustments": [
+        "금리 방식 가산: 5년 단위 변동금리 +0.1%p, 10년 고정금리 +0.2%p, 순수 고정금리 +0.3%p",
+        "대상 주택이 지방에 있으면 0.2%p 인하",
+        "우대금리 적용 상한 0.5%p (다자녀가구 0.7%p)",
+        "우대 적용 후 최종금리가 연 1.5% 미만이면 1.5% 적용"
+      ],
+      "notCovered": [
+        "부부합산 연소득(4구간)·대출기간(10/15/20/30년)별 칸 금리표는 페이지에서 추출하지 못했습니다. 공식 페이지 표를 확인하세요."
+      ],
+      "source": {
+        "name": "주택도시기금 — 내집마련 디딤돌대출 대출안내",
+        "url": "https://nhuf.molit.go.kr/FP/FP05/FP0503/FP05030101.jsp",
+        "checkedAt": "2026-11-09"
+      }
+    },
+    {
+      "productId": "bogeumjari",
+      "rateType": "고정금리 (대출 실행일부터 만기까지)",
+      "termTable": {
+        "publishedAt": "2026-11-09",
+        "terms": [10, 15, 20, 30, 40, 50],
+        "series": [
+          { "name": "아낌e-보금자리론", "percents": [5.0, 5.1, 5.15, 5.2, 5.25, 5.3] },
+          { "name": "u-보금자리론", "percents": [5.1, 5.2, 5.25, 5.3, 5.35, 5.4] }
+        ]
+      },
+      "adjustments": [
+        "u-보금자리론은 비대면 방식으로 아낌e-보금자리론보다 0.1%p 높음",
+        "우대금리는 최대 1.0%p 한도에서 중복 적용 가능, 전자약정·전자등기 우대(0.1%p)는 별도로 추가",
+        "담보주택이 규제지역에 있으면 가산금리 0.2%p (전세사기피해자는 제외)"
+      ],
+      "notCovered": ["우대 항목별 수치와 요건(저소득청년·신혼·다자녀 등)은 공식 페이지에서 확인하세요."],
+      "source": {
+        "name": "한국주택금융공사 — 보금자리론 금리안내",
+        "url": "https://www.hf.go.kr/ko/sub01/sub01_01_04.do",
+        "checkedAt": "2026-11-09",
+        "publishedAt": "2026-11-09"
+      }
+    },
+    {
+      "productId": "bank-jeonse",
+      "rateType": "은행별 (변동금리는 보통 코픽스 등 기준금리에 은행 가산금리를 더함)",
+      "benchmarks": [
+        {
+          "name": "신규취급액기준 COFIX",
+          "percent": 3.43,
+          "publishedAt": "2026-10-15",
+          "note": "대상월 2026년 9월"
+        },
+        {
+          "name": "잔액기준 COFIX",
+          "percent": 3.15,
+          "publishedAt": "2026-10-15",
+          "note": "대상월 2026년 9월"
+        },
+        {
+          "name": "신 잔액기준 COFIX",
+          "percent": 2.79,
+          "publishedAt": "2026-10-15",
+          "note": "대상월 2026년 9월"
+        }
+      ],
+      "adjustments": ["COFIX 는 매월 15일경 공시됩니다 (다음 공시 2026-11-16)."],
+      "notCovered": [
+        "실제 대출금리는 은행별 가산금리·우대금리·보증기관·신용도에 따라 달라 공식 자료로 확인하지 못했습니다. 은행의 안내 금리를 사용하세요."
+      ],
+      "source": {
+        "name": "전국은행연합회 소비자포털 — COFIX 공시",
+        "url": "https://portal.kfb.or.kr/fingoods/cofix.php",
+        "checkedAt": "2026-11-09",
+        "publishedAt": "2026-10-15"
+      }
+    },
+    {
+      "productId": "bank-mortgage",
+      "rateType": "은행별 (변동금리는 보통 코픽스 등 기준금리에 은행 가산금리를 더함)",
+      "benchmarks": [
+        {
+          "name": "신규취급액기준 COFIX",
+          "percent": 3.43,
+          "publishedAt": "2026-10-15",
+          "note": "대상월 2026년 9월"
+        },
+        {
+          "name": "잔액기준 COFIX",
+          "percent": 3.15,
+          "publishedAt": "2026-10-15",
+          "note": "대상월 2026년 9월"
+        },
+        {
+          "name": "신 잔액기준 COFIX",
+          "percent": 2.79,
+          "publishedAt": "2026-10-15",
+          "note": "대상월 2026년 9월"
+        }
+      ],
+      "adjustments": ["COFIX 는 매월 15일경 공시됩니다 (다음 공시 2026-11-16)."],
+      "notCovered": [
+        "실제 대출금리는 은행별 가산금리·우대금리·상환 방식·신용도에 따라 달라 공식 자료로 확인하지 못했습니다. 은행의 안내 금리를 사용하세요."
+      ],
+      "source": {
+        "name": "전국은행연합회 소비자포털 — COFIX 공시",
+        "url": "https://portal.kfb.or.kr/fingoods/cofix.php",
+        "checkedAt": "2026-11-09",
+        "publishedAt": "2026-10-15"
+      }
+    }
+  ]
+}

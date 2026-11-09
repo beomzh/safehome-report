@@ -554,3 +554,14 @@ dialog.report-dialog::backdrop {
     display: none;
   }
 }
+
+/* 대출 금리 안내 */
+.rate-block {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+.rate-block .table caption {
+  text-align: left;
+  padding-bottom: 4px;
+}
