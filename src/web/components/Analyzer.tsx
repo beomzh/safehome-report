@@ -16,6 +16,7 @@ import { InputForm } from './InputForm';
 import { ListingImport } from './ListingImport';
 import { LoanCatalog } from './LoanCatalog';
 import { MarketLookup } from './MarketLookup';
+import { SiteLinks } from './SiteLinks';
 import { ReportDialog } from './ReportDialog';
 import { ReportView } from './ReportView';
 import { RequirementsReport } from './RequirementsReport';
@@ -131,6 +132,7 @@ export function Analyzer() {
             </p>
           </section>
         )}
+        <SiteLinks />
       </div>
 
       {result && (
