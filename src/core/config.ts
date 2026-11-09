@@ -26,5 +26,14 @@ export const rulesConfigSchema = z.object({
     windowMonths: z.number().int().positive(),
     minCount: z.number().int().positive(),
   }),
+  /** 실거래 기반 시세 추정 기준 (src/core/market) */
+  marketEstimate: sourcedSchema.extend({
+    /** 최근 N개월 거래만 사용 */
+    windowMonths: z.number().int().positive(),
+    /** 이 건수 미만이면 신뢰도 low */
+    minSamples: z.number().int().positive(),
+    /** 목표 전용면적 ± 이 값(㎡) 안의 거래만 사용 */
+    areaToleranceM2: z.number().nonnegative(),
+  }),
 });
 export type RulesConfig = z.infer<typeof rulesConfigSchema>;

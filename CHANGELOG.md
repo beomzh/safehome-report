@@ -1,3 +1,10 @@
+[2026-11-09 13:30]
+- [Added] - src/core/market/estimate.ts `estimateMarketValue` `medianWon`: 정규화된 실거래 목록에서 해제·면적 범위·조회 기간·단지명 조건으로 거르고 중앙값 시세와 표본 수 기반 신뢰도 산출 (순수 함수, 기준값은 호출자가 주입)
+- [Added] - src/core/config.ts, rules.config/rules.v1.json: marketEstimate 설정(조회 기간 12개월, 최소 표본 3건, 면적 ±3㎡, 모두 provisional) 추가
+- [Added] - tests/golden/market-estimate.test.ts: 중앙값, 해제·면적·기간·단지 필터 경계값, 신뢰도, 입력 검증 테스트 (합성 데이터)
+- [Added] - docs/public-data-api.md: 발급할 공공데이터 API 목록과 공식 페이지에서 확인한 사실, 확인하지 못한 항목, 주의사항
+- [Changed] - docs/ROADMAP.md: M4 진행 상태 갱신
+
 [2026-11-09 11:10]
 - [Changed] - .github/workflows/ci.yml: check 잡에 `npm run build` 단계 추가 (Next.js 프로덕션 빌드 실패를 CI에서 조기 발견)
 - [Added] - .github/workflows/ci.yml docker 잡: 이미지 빌드, 읽기 전용으로 기동해 HTTP 응답 확인, non-root 실행 확인 (게시하지 않음)
