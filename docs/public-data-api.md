@@ -36,7 +36,10 @@
 - 실제 응답 샘플은 `tests/fixtures/public-data/` 에 있고 계약 테스트에 쓴다. 이 응답에는 키가 포함되지 않는다.
 - 현재 앱이 쓰는 것은 아파트 **매매** API 뿐이다. 깡통전세 판단의 시세는 매매 시세와 비교하기 때문이다(전월세 API는 전세가율 참고용으로 후속 검토).
 
-## 연립다세대·오피스텔 매매 (2026-11-09 시도)
+## 연립다세대·오피스텔 매매 (2026-11-09)
+
+- **오피스텔은 활용신청 승인 후 실제 응답으로 확인했다**: `offiNm`, `dealAmount`(만원, 쉼표), `excluUseAr`, `dealYear/Month/Day`, `cdealType`, `floor`, `buildYear`, `umdNm`, `jibun`, `totalCount`. 샘플은 `tests/fixtures/public-data/offi-trade-11680-202510.xml`.
+- 연립다세대·단독/다가구는 아직 코드 30(승인 전)이다.
 
 - 엔드포인트 경로는 존재한다: `RTMSDataSvcRHTrade/getRTMSDataSvcRHTrade`(연립다세대), `RTMSDataSvcOffiTrade/getRTMSDataSvcOffiTrade`(오피스텔), `RTMSDataSvcSHTrade/getRTMSDataSvcSHTrade`(단독/다가구). 현재 키로 호출하면 세 곳 모두 오류 코드 30(등록되지 않은 서비스 키)이 돌아온다. **각 API 상세 페이지에서 따로 활용신청해야 한다.**
 - 따라서 응답 필드는 실제로 확인하지 못했다. 앱은 연립다세대 `mhouseNm`, 오피스텔 `offiNm` 을 건물명으로, 나머지(`dealAmount`, `excluUseAr`, `dealYear/Month/Day`, `cdealType`)는 아파트와 같다고 가정해 읽는다. 이 가정이 틀리면 항목이 건너뛰어져 "조건에 맞는 거래 없음"으로 나타난다.

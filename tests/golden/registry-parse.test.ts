@@ -70,4 +70,15 @@ describe('parseRegistryText (합성 문서)', () => {
     const r = parseRegistryText(fixture('synthetic-clean.txt'));
     expect(JSON.stringify(r)).not.toMatch(/\d{6}-/);
   });
+
+  it('현재 유효사항 형식(공유자전원지분전부이전, 을구 기록사항 없음)을 읽는다', () => {
+    const r = parseRegistryText(fixture('synthetic-current-valid.txt'));
+    expect(r.ok).toBe(true);
+    const f = r.facts!;
+    expect(f.owners).toEqual([{ name: '홍가상' }]);
+    expect(f.gap.map((e) => e.type)).toEqual(['ownership_transfer']);
+    expect(f.gap[0]!.registeredAt).toBe('2024-06-28');
+    expect(f.eul).toEqual([]);
+    expect(f.parseConfidence).toBe(1);
+  });
 });

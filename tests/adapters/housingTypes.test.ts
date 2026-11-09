@@ -1,10 +1,11 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { parseTradeXml } from '../../src/adapters/public-data/aptTrade';
 import { HOUSING } from '../../src/adapters/public-data/housing';
 import { createTradeService } from '../../src/adapters/public-data/tradeService';
 import { parseMarketQuery } from '../../src/web/marketQuery';
 
-// 연립다세대·오피스텔 응답 필드는 공식 명세 기준 추정이다 (실제 응답 미검증). 합성 응답으로 동작만 확인한다.
+// 연립다세대 응답 필드는 공식 명세 기준 추정이다 (활용신청 전, 실제 응답 미검증). 합성 응답으로 동작만 확인한다.
 const item = (nameTag: string, name: string, amount: string) =>
   `<item><${nameTag}>${name}</${nameTag}><cdealType> </cdealType><dealAmount>${amount}</dealAmount>` +
   `<dealDay>10</dealDay><dealMonth>10</dealMonth><dealYear>2026</dealYear><excluUseAr>45.5</excluUseAr></item>`;
@@ -44,12 +45,28 @@ describe('주택 유형별 매매 실거래', () => {
     await expect(s.fetchMonth('11680', '202610', 'apt')).rejects.toThrow(/등록되지 않은 서비스 키/);
   });
 
-  it('명세: 아파트만 검증됨으로 표시된다', () => {
+  it('오피스텔 실제 응답(2026-11-09, 강남구 2025-10)을 읽는다', () => {
+    const xml = readFileSync(
+      new URL('../fixtures/public-data/offi-trade-11680-202510.xml', import.meta.url),
+      'utf-8',
+    );
+    const r = parseTradeXml(xml, HOUSING.officetel.nameTag);
+    expect(r.skipped).toBe(0);
+    expect(r.records[0]).toMatchObject({
+      amountWon: 300_000_000,
+      areaM2: 31.33,
+      dealDate: '2025-10-27',
+      complexName: '목화밀라트',
+    });
+    expect(r.totalCount).toBe(94);
+  });
+
+  it('명세: 아파트·오피스텔만 검증됨으로 표시된다', () => {
     expect(
       Object.entries(HOUSING)
         .filter(([, v]) => v.verified)
         .map(([k]) => k),
-    ).toEqual(['apt']);
+    ).toEqual(['apt', 'officetel']);
   });
 
   it('쿼리의 housing 은 기본 apt 이고 알 수 없는 값은 거부한다', () => {

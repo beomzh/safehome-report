@@ -94,7 +94,7 @@ export function MarketLookup({ form, setForm }: Props) {
         >
           <option value="apt">아파트</option>
           <option value="rowhouse">연립·다세대(빌라) — 미검증</option>
-          <option value="officetel">오피스텔 — 미검증</option>
+          <option value="officetel">오피스텔</option>
         </select>
       </label>
       <div className="row2">
