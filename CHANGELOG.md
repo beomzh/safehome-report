@@ -1,3 +1,12 @@
+[2026-11-09 15:40]
+- [Added] - src/adapters/public-data/aptTrade.ts `parseAptTradeXml` `PublicDataError`: 실제 응답 구조(쉼표 포함 만원 금액, 해제 표시, totalCount)로 아파트 매매 XML을 `TradeRecord`로 정규화하고 오류 코드(22 한도 초과 등)를 해석
+- [Added] - src/adapters/public-data/tradeService.ts `createTradeService` `monthsToFetch`: 키 인코딩 처리, 페이지네이션(최대 페이지 제한), 재시도(복구 불가 오류 제외), 타임아웃, 지역·월 단위 TTL 캐시, 여러 달 거래로 시세 추정
+- [Added] - src/app/api/market/route.ts, src/web/marketQuery.ts: 키를 서버에서만 사용하는 시세 조회 라우트와 쿼리 검증 (법정동코드·면적·단지명만 수신, 키는 응답·로그에 남기지 않음)
+- [Added] - src/web/components/MarketLookup.tsx: 실거래가 시세 조회 UI, 단지명 없이 지역 전체로 계산하면 신뢰도 low 와 경고 표시
+- [Changed] - src/web/components/InputForm.tsx, Analyzer.tsx, src/app/page.tsx: 시세 조회 슬롯 연결, 전송 범위 안내 문구를 실제 동작에 맞게 수정
+- [Added] - tests/adapters/*.test.ts, tests/web/marketQuery.test.ts, tests/fixtures/public-data/: 실제 응답 픽스처 기반 계약 테스트와 서비스·검증 테스트 32건
+- [Changed] - docs/public-data-api.md, docs/threat-model.md, docs/ROADMAP.md, README.md: 실제 호출로 확인한 필드·키 형식, 시세 조회 전송 범위, 환경변수 설명 갱신
+
 [2026-11-09 13:30]
 - [Added] - src/core/market/estimate.ts `estimateMarketValue` `medianWon`: 정규화된 실거래 목록에서 해제·면적 범위·조회 기간·단지명 조건으로 거르고 중앙값 시세와 표본 수 기반 신뢰도 산출 (순수 함수, 기준값은 호출자가 주입)
 - [Added] - src/core/config.ts, rules.config/rules.v1.json: marketEstimate 설정(조회 기간 12개월, 최소 표본 3건, 면적 ±3㎡, 모두 provisional) 추가

@@ -12,11 +12,13 @@ interface Props {
   onReset: () => void;
   /** 폼 하단(오류 표시 위)에 추가로 렌더링할 섹션 (대출·자금 계획 등) */
   extra?: ReactNode;
+  /** 시세 입력 아래에 렌더링할 섹션 (실거래가 조회 등) */
+  marketSlot?: ReactNode;
 }
 
 const KIND_LABEL: Record<Kind, string> = { jeonse: '전세', monthly: '월세', sale: '매매' };
 
-export function InputForm({ form, setForm, errors, onSubmit, onReset, extra }: Props) {
+export function InputForm({ form, setForm, errors, onSubmit, onReset, extra, marketSlot }: Props) {
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
   const isSale = form.kind === 'sale';
@@ -115,6 +117,8 @@ export function InputForm({ form, setForm, errors, onSubmit, onReset, extra }: P
         />
         시세가 불확실합니다 (다가구·신축·거래 적음 등)
       </label>
+
+      {marketSlot}
 
       <h2>3. 등기부 정보</h2>
       <label className="check">

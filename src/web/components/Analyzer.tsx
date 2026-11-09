@@ -12,6 +12,7 @@ import { ChecklistPanel } from './ChecklistPanel';
 import { FinanceFields } from './FinanceFields';
 import { FinanceReport } from './FinanceReport';
 import { InputForm } from './InputForm';
+import { MarketLookup } from './MarketLookup';
 import { ReportView } from './ReportView';
 
 interface Result {
@@ -68,6 +69,7 @@ export function Analyzer() {
         errors={errors}
         onSubmit={analyze}
         onReset={reset}
+        marketSlot={<MarketLookup setForm={setForm} />}
         extra={<FinanceFields fin={fin} setFin={setFin} kind={form.kind} />}
       />
       <div className="results">
