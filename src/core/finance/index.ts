@@ -15,3 +15,5 @@ export {
 export type { AffordabilityInput, CostAssumptions, FinanceProfile, LoanAssumptions } from './types';
 export { evaluateRequirements, requirementsInputSchema } from './requirements';
 export type { MaxLoanBottleneck, RequirementRow, Requirements, RequirementsInput } from './requirements';
+export { acquisitionTax, brokerageFee } from './taxes';
+export type { AcquisitionTaxResult, BrokerageResult } from './taxes';

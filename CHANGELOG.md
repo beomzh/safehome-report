@@ -1,3 +1,8 @@
+[2026-11-10 10:20]
+- [Added] - src/core/finance/taxes.ts `acquisitionTax` `brokerageFee`: 주택 유상취득 취득세(6억 이하 1%·9억 이상 3%·사이 선형 산식, 지방교육세, 85㎡ 초과 농어촌특별세)와 중개보수 상한(매매·전세 구간 요율, 한도액, 월세 환산보증금) 법정 계산. 중과·감면은 미반영하고 그 사실을 근거 문구로 알림
+- [Added] - src/core/config.ts, rules.config/rules.v1.json: 취득세·중개보수 표 설정(출처·잠정 표시). 취득세는 법 조문 사본으로 확인, 중개보수는 서울 조례 원문 미확인으로 provisional
+- [Added] - tests/golden/taxes.test.ts: 5억·7억·8억 취득세, 85㎡ 경계, 중과 직접 입력, 매매·전세·월세 중개보수 구간·한도·경계 손계산 검증 25건
+
 [2026-11-09 21:10]
 - [Added] - src/adapters/log/logger.ts `createLogger` `getLogger`: 한 줄 JSON 구조화 로그. 성명·금액·텍스트·키 등 금지 이름의 필드는 값을 남기지 않고, 알려진 시크릿 값은 가리며, 문자열은 200자로 제한
 - [Changed] - src/app/api/market/route.ts, src/app/api/listing/route.ts: 성공·실패·잘못된 요청마다 요청 번호·소요 시간·건수·결과·오류 종류를 로그로 남김 (매물 텍스트·단지명·링크·키는 미포함)
