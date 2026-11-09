@@ -41,7 +41,7 @@ docker compose down            # 중지
 {"ts":"…","level":"info","tag":"LISTING","event":"extract_ok","req":"cb2ba137","status":200,"ms":3178,"provider":"openai-compatible/responses","chars":60,"extracted":5}
 ```
 
-- `MARKET` 은 실거래가 시세 조회, `LISTING` 은 매물 설명 AI 추출입니다.
+- `MARKET` 은 실거래가 시세 조회, `LISTING` 은 매물 설명 AI 추출, `ASSUMPTIONS` 는 대출 기준값 AI 제안입니다. `ASSUMPTIONS` 로그에는 소요 시간, 채워진 항목 수, 신뢰도만 남고 지역·금액은 남지 않습니다.
 - 재시도는 `warn`(`public_data_retry`, `llm_retry`), 실패는 `error` 로 남습니다. `debug` 에서는 캐시 적중과 월별 로딩 건수도 보입니다.
 - 설명을 비운 채 링크만 입력하면 서버를 호출하지 않고 화면에서 안내하므로 로그가 없습니다.
 - 위험 점검과 자금 계산은 브라우저 안에서만 실행되어 서버 로그에 남지 않습니다.

@@ -18,12 +18,14 @@ export function RequirementsReport({
   amountWon,
   grade,
   costNotes = [],
+  assumptionNotes = [],
 }: {
   requirements: Requirements;
   kind: Kind;
   amountWon: number;
   grade: Grade;
   costNotes?: string[];
+  assumptionNotes?: string[];
 }) {
   const top = r.rows[0];
   const subject = kind === 'sale' ? `매매가 ${formatWon(amountWon)}` : `보증금 ${formatWon(amountWon)}`;
@@ -38,6 +40,12 @@ export function RequirementsReport({
           위험 신호가 발견되었습니다. 자금 계산보다 위험 신호 확인이 먼저입니다.
         </p>
       )}
+
+      {assumptionNotes.map((n) => (
+        <p key={n} className="notice danger" role="note">
+          ⚠️ {n}
+        </p>
+      ))}
 
       {top && (
         <div className="grade grade-gray" role="status">
