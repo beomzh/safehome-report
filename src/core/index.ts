@@ -6,3 +6,5 @@ export * from './finance';
 export * from './market';
 export { parseRegistryText } from './registry/parse';
 export type { RegistryParseResult } from './registry/parse';
+export { evaluateVerdict, VERDICT_LABEL, STATUS_LABEL } from './verdict/criteria';
+export type { Criterion, CriterionStatus, Verdict, VerdictInput, VerdictResult } from './verdict/criteria';

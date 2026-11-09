@@ -77,6 +77,13 @@ export const rulesConfigSchema = z.object({
     /** 지방교육세 = 재산세액의 이 비율(%) */
     localEducationPercent: z.number().nonnegative(),
   }),
+  /** "보러 갈지" 기준표(C1~C6)의 임계치. 처음 돌려본 뒤 조정할 잠정값 */
+  verdict: sourcedSchema.extend({
+    /** 필요 자기자금 부족률이 이 값(%) 이하면 주의, 초과면 미달 */
+    shortfallCautionPercent: z.number().nonnegative(),
+    /** 연 상환 비율이 DSR 한도의 이 비율(%) 이하면 충족 */
+    debtServiceCautionRatioPercent: z.number().positive(),
+  }),
   /** 중개보수 상한 요율표 (시·도 조례로 정해지므로 지역별로 다를 수 있다) */
   brokerage: sourcedSchema.extend({
     sale: z.array(brokerageBandSchema).min(1),

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { evaluateAffordability, evaluateRequirements, evaluateRisk } from '../../core';
-import type { Affordability, Requirements, RiskInput, RiskReport } from '../../core';
+import { evaluateAffordability, evaluateRequirements, evaluateRisk, evaluateVerdict } from '../../core';
+import type { Affordability, Requirements, RiskInput, RiskReport, VerdictResult } from '../../core';
 import { buildRiskInput, emptyForm, todayIso } from '../form';
 import type { FormState } from '../form';
 import { buildFinancePlan, emptyFinanceForm } from '../financeForm';
@@ -16,6 +16,7 @@ import { InputForm } from './InputForm';
 import { ListingImport } from './ListingImport';
 import { LoanCatalog } from './LoanCatalog';
 import { MarketLookup } from './MarketLookup';
+import { VerdictPanel } from './VerdictPanel';
 import { SiteLinks } from './SiteLinks';
 import { ReportDialog } from './ReportDialog';
 import { ReportView } from './ReportView';
@@ -28,6 +29,7 @@ interface Result {
   requirements?: Requirements;
   costNotes?: string[];
   assumptionNotes?: string[];
+  verdict: VerdictResult;
 }
 
 export function Analyzer() {
@@ -45,6 +47,7 @@ export function Analyzer() {
     let requirements: Requirements | undefined;
     let costNotes: string[] = [];
     let assumptionNotes: string[] = [];
+    let dsrLimitPercent: number | undefined;
     if (fin.enabled && built.ok) {
       const plan = buildFinancePlan(
         fin,
@@ -59,6 +62,7 @@ export function Analyzer() {
       if (!plan.ok) errs.push(...plan.errors);
       else {
         requirements = evaluateRequirements(plan.requirements);
+        dsrLimitPercent = plan.requirements.loan.dsrLimitPercent;
         costNotes = plan.costNotes;
         assumptionNotes = plan.assumptionNotes;
         if (plan.affordability) finance = evaluateAffordability(plan.affordability);
@@ -73,8 +77,21 @@ export function Analyzer() {
     }
     setErrors([]);
     // 순수 함수: 브라우저에서 실행되며 입력(재무 정보 포함)이 네트워크로 나가지 않는다
+    const report = evaluateRisk(built.input, rulesConfig);
     setResult({
-      report: evaluateRisk(built.input, rulesConfig),
+      report,
+      verdict: evaluateVerdict(
+        {
+          kind: built.input.contract.kind,
+          amountWon: built.input.contract.amount,
+          marketWon: built.input.market?.estimatedValue,
+          marketConfidence: built.input.market?.confidence,
+          grade: report.grade,
+          affordability: finance,
+          dsrLimitPercent,
+        },
+        rulesConfig,
+      ),
       input: built.input,
       finance,
       requirements,
@@ -137,6 +154,7 @@ export function Analyzer() {
 
       {result && (
         <ReportDialog open={dialogOpen} onClose={() => setDialogOpen(false)} title="분석 리포트">
+          <VerdictPanel result={result.verdict} kind={result.input.contract.kind} />
           <ReportView report={result.report} input={result.input} />
           {result.requirements && (
             <RequirementsReport
