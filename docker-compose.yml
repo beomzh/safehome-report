@@ -1,0 +1,19 @@
+services:
+  web:
+    build: .
+    image: safehome-report:local
+    # 내 PC에서만 접속 가능하도록 127.0.0.1 에만 바인딩
+    ports:
+      - '127.0.0.1:3000:3000'
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    # 현재는 환경 변수가 필요 없다. LLM·공공데이터 연동이 붙으면 .env 로 주입한다
+    env_file:
+      - path: .env
+        required: false

@@ -1,3 +1,8 @@
+[2026-11-09 10:20]
+- [Added] - Dockerfile: node:22-alpine 3단계 빌드(deps/build/runtime), Next.js standalone 출력, non-root(node) 실행, 텔레메트리 비활성화, 헬스체크
+- [Added] - docker-compose.yml: 127.0.0.1:3000 에만 바인딩, 읽기 전용 파일시스템(/tmp 는 tmpfs), 모든 capability 제거, no-new-privileges, .env 는 있으면 읽는 선택 항목
+- [Changed] - README.md, docs/ROADMAP.md: Docker 실행·중지·로그 사용법 추가, M6 진행 상태 갱신
+
 [2026-11-06 11:40]
 - [Added] - src/web/financeForm.ts `buildAffordabilityInput` `parsePercent`: 대출·자금 폼 입력을 검증해 계산 입력으로 변환 (만원→원, 년→개월, 기본값 없이 필수값 검증, 담보가치 규칙)
 - [Added] - src/web/components/FinanceFields.tsx, FinanceReport.tsx: 재무·대출 기준값·부대비용 입력과 필요 자금·대출 한도·과부족·월 상환 리포트 (위험 등급이 red 이면 확인 우선 안내)
