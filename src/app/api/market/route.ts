@@ -62,6 +62,7 @@ export async function GET(request: Request) {
       withComplex: parsed.query.complexName !== undefined,
       months: r.monthsQueried,
       samples: r.sampleCount,
+      similar: r.similar.length,
       confidence: r.market?.confidence ?? 'none',
     });
     return Response.json({
@@ -70,6 +71,7 @@ export async function GET(request: Request) {
       minWon: r.minWon ?? null,
       maxWon: r.maxWon ?? null,
       windowMonths: rulesConfig.marketEstimate.windowMonths,
+      similar: r.similar,
     });
   } catch (e) {
     const message = e instanceof PublicDataError ? e.message : '실거래가 조회에 실패했습니다.';

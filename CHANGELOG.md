@@ -8,6 +8,7 @@
 
 ### Added
 
+- **비슷한 실거래 단지 비교**: 시세 조회 결과 아래에 같은 지역에서 비슷한 면적(±허용 오차)으로 최근 거래된 다른 단지를 최대 5곳, 조회 시세에 가까운 순으로 보여줍니다(단지별 중앙값·거래 건수·시세 대비 %). 거래가 1건뿐인 단지는 우연일 수 있어 제외하고 해제 거래도 뺍니다. 판매 중인 매물이 아니라 실제 거래 사례이며, 지금 나온 매물은 매물 사이트 링크에서 확인하도록 안내합니다. 공개 API 변경: `GET /api/market` 응답에 `similar` 배열 추가. — 관련 파일: `src/core/market/similar.ts`, `src/adapters/public-data/tradeService.ts`, `src/web/components/MarketLookup.tsx`
 - **함께 확인할 사이트 링크**: 결과 영역에 매물 찾기(네이버 부동산·직방·다방·호갱노노·KB부동산), 가격·건물 확인(실거래가 공개시스템·공시가격 알리미·건축HUB), 계약 전 확인(인터넷등기소·HUG·위택스·홈택스) 링크를 접이식으로 보여줍니다. 링크만 제공하며 앱이 해당 사이트로 정보를 보내지 않습니다(매물 목록은 공개 API가 없고 스크래핑은 약관상 위험). 접속 확인은 2026-11-09, 직방은 봇 접근을 막아 브라우저에서만 열립니다. 공개 API 변경 없음. — 관련 파일: `src/web/siteLinks.ts`, `src/web/components/SiteLinks.tsx`
 - **오피스텔 시세 조회 검증 완료·등기부 파서 형식 보강**: 활용신청 승인 후 오피스텔 매매 API를 실제로 호출해 필드(`offiNm`, `dealAmount`, `excluUseAr`)가 맞는 것을 확인하고 실제 응답을 계약 테스트로 추가했습니다(신뢰도는 계속 낮음으로 입력). 등기부 파서는 실제 열람본("현재 유효사항")에 나온 `공유자전원지분전부이전` 등기목적을 소유권 이전으로 읽고 "기록사항 없음" 을구를 처리합니다. 공개 API 변경 없음. — 관련 파일: `src/adapters/public-data/housing.ts`, `src/core/registry/parse.ts`, `tests/`
 - **MIT 라이선스**: `LICENSE` 파일을 추가하고 `package.json` 의 `license` 를 `UNLICENSED` 에서 `MIT` 로 바꿨습니다. 이전에는 라이선스가 없어 재사용 허가가 정해지지 않았습니다. 저작권자 표기는 GitHub 계정명(`beomzh`)이며 실명으로 바꾸려면 `LICENSE` 한 줄만 고치면 됩니다. 공개 API 변경 없음. — 관련 파일: `LICENSE`, `package.json`, `README.md`
