@@ -12,6 +12,7 @@ import { ChecklistPanel } from './ChecklistPanel';
 import { FinanceFields } from './FinanceFields';
 import { FinanceReport } from './FinanceReport';
 import { InputForm } from './InputForm';
+import { LoanCatalog } from './LoanCatalog';
 import { ListingImport } from './ListingImport';
 import { MarketLookup } from './MarketLookup';
 import { ReportView } from './ReportView';
@@ -79,6 +80,7 @@ export function Analyzer() {
           <>
             <ReportView report={result.report} input={result.input} />
             {result.finance && <FinanceReport result={result.finance} grade={result.report.grade} />}
+            <LoanCatalog kind={result.input.contract.kind} grade={result.report.grade} />
             <ChecklistPanel kind={result.input.contract.kind} />
           </>
         ) : (
