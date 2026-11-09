@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { acquisitionTax, brokerageFee } from '../../src/core';
+import { acquisitionTax, brokerageFee, propertyTax } from '../../src/core';
 import { config } from '../helpers/builders';
 
 const acq = (price: number, area?: number, override?: number) =>
@@ -99,5 +99,45 @@ describe('brokerageFee — 상한 요율 (손계산 검증)', () => {
 
   it('부가세 미포함·협의 가능을 알린다', () => {
     expect(fee('jeonse', 300_000_000).notes.join(' ')).toContain('부가세');
+  });
+});
+
+describe('propertyTax — 주택 재산세 (손계산 검증)', () => {
+  const tax = (price: number, single: boolean) => propertyTax(price, single, config.propertyTax);
+
+  it('1세대 1주택 공시가격 5억: 과세표준 2.2억(44%), 재산세 26만 + 도시지역분 30.8만, 지방교육세 20%', () => {
+    const r = tax(500_000_000, true);
+    expect(r.singleHomeApplied).toBe(true);
+    expect([r.fairMarketPercent, r.taxBaseWon, r.baseTaxWon, r.urbanAreaWon]).toEqual([
+      44, 220_000_000, 260_000, 308_000,
+    ]);
+    expect([r.propertyTaxWon, r.localEducationTaxWon, r.totalWon]).toEqual([568_000, 113_600, 681_600]);
+  });
+
+  it('일반(다주택 등) 공시가격 5억: 과세표준 3억(60%), 재산세 57만 + 도시지역분 42만', () => {
+    const r = tax(500_000_000, false);
+    expect(r.singleHomeApplied).toBe(false);
+    expect([r.taxBaseWon, r.baseTaxWon, r.urbanAreaWon, r.totalWon]).toEqual([
+      300_000_000, 570_000, 420_000, 1_188_000,
+    ]);
+  });
+
+  it('공정시장가액비율 경계: 3억 이하 43%, 6억 이하 44%, 초과 45%', () => {
+    expect(tax(300_000_000, true).fairMarketPercent).toBe(43);
+    expect(tax(300_000_001, true).fairMarketPercent).toBe(44);
+    expect(tax(600_000_000, true).fairMarketPercent).toBe(44);
+    expect(tax(600_000_001, true).fairMarketPercent).toBe(45);
+  });
+
+  it('공시가격 9억 초과는 1주택이어도 특례를 쓰지 않고 안내한다', () => {
+    const r = tax(900_000_001, true);
+    expect(r.singleHomeApplied).toBe(false);
+    expect(r.fairMarketPercent).toBe(60);
+    expect(r.notes.join(' ')).toContain('9억');
+  });
+
+  it('과세표준 3억 초과 구간(0.4%)까지 누진 적용: 공시가격 20억 일반 → 과세표준 12억', () => {
+    // 6천만×0.1% + 9천만×0.15% + 1.5억×0.25% + 9억×0.4% = 6만+13.5만+37.5만+360만 = 417만
+    expect(tax(2_000_000_000, false).baseTaxWon).toBe(4_170_000);
   });
 });

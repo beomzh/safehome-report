@@ -14,7 +14,7 @@ interface Props {
   amountManwon: string;
 }
 
-type TextKey = Exclude<keyof FinanceFormState, 'enabled' | 'autoCosts' | 'aiFields'>;
+type TextKey = Exclude<keyof FinanceFormState, 'enabled' | 'autoCosts' | 'aiFields' | 'singleHome'>;
 
 export function FinanceFields({ fin, setFin, kind, amountManwon }: Props) {
   const isSale = kind === 'sale';
@@ -112,11 +112,30 @@ export function FinanceFields({ fin, setFin, kind, amountManwon }: Props) {
             </label>
             <p className="hint">
               취득세는 일반 세율 기준이고 다주택·조정대상지역 중과와 감면은 반영하지 않습니다. 중과를 받는다면
-              세율을 직접 입력하세요. 보유세는 계산하지 않습니다. 요율표는 잠정값입니다.
+              세율을 직접 입력하세요. 보유세는 공시가격을 입력하면 재산세만 계산하고 종합부동산세는 계산하지
+              않습니다. 요율표는 잠정값입니다.
             </p>
             {kind === 'monthly' && text('monthlyRentManwon', '월세 (만원, 중개보수 환산용)', '예: 80')}
             {isSale &&
               text('acquisitionTaxPercent', '취득세 등 비율 (%, 직접 입력 시 자동 계산 대신 사용)', '예: 8')}
+            {isSale && (
+              <>
+                {text(
+                  'publicPriceManwon',
+                  '공시가격 (만원, 재산세 계산용·선택)',
+                  '예: 40,000',
+                  '공동주택 공시가격은 부동산공시가격 알리미에서 확인합니다. 비우면 재산세를 계산하지 않습니다.',
+                )}
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={fin.singleHome}
+                    onChange={(e) => setFin((f) => ({ ...f, singleHome: e.target.checked }))}
+                  />
+                  1세대 1주택입니다 (재산세 특례세율, 공시가격 9억 원 이하)
+                </label>
+              </>
+            )}
             <div className="row2">
               {text('brokerFeePercent', '중개보수 요율 (%, 직접 입력 시 자동 계산 대신 사용)', '예: 0.4')}
               {text('brokerFeeOverrideManwon', '또는 중개보수 금액 (만원)', '입력 시 요율보다 우선')}

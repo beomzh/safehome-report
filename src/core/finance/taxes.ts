@@ -3,7 +3,7 @@ import { mulPercent } from './money';
 
 /**
  * 취득세와 중개보수의 법정 계산. 요율·구간은 rules.config 의 표를 쓰며 모두 잠정값이다.
- * 보유세(재산세·종합부동산세)는 세율표와 개편 내용을 확인하지 못해 계산하지 않는다.
+ * 재산세는 잠정 세율표로 계산하고, 종합부동산세는 개편 내용을 확인하지 못해 계산하지 않는다.
  */
 
 export interface AcquisitionTaxResult {
@@ -124,6 +124,79 @@ export function brokerageFee(
     ratePercent: band.ratePercent,
     capWon: band.capWon,
     capped,
+    notes,
+  };
+}
+
+export interface PropertyTaxResult {
+  /** 1세대 1주택 특례(세율·공정시장가액비율)를 적용했는가 */
+  singleHomeApplied: boolean;
+  fairMarketPercent: number;
+  taxBaseWon: number;
+  /** 누진세율로 계산한 재산세 본세 */
+  baseTaxWon: number;
+  urbanAreaWon: number;
+  /** 본세 + 도시지역분 */
+  propertyTaxWon: number;
+  localEducationTaxWon: number;
+  /** 재산세 + 지방교육세 (연간) */
+  totalWon: number;
+  notes: string[];
+}
+
+type TaxBracket = RulesConfig['propertyTax']['brackets'][number];
+
+const bracketFor = (brackets: readonly TaxBracket[], value: number): TaxBracket =>
+  brackets.find((b) => b.upToWon !== undefined && value <= b.upToWon) ??
+  (brackets[brackets.length - 1] as TaxBracket);
+
+function progressive(base: number, brackets: readonly TaxBracket[]): number {
+  let tax = 0;
+  let lower = 0;
+  for (const b of brackets) {
+    const upper = b.upToWon ?? Number.POSITIVE_INFINITY;
+    if (base > lower) tax += mulPercent(Math.min(base, upper) - lower, b.ratePercent);
+    lower = upper;
+    if (base <= upper) break;
+  }
+  return tax;
+}
+
+/**
+ * 주택 재산세(연간). 공시가격에 공정시장가액비율을 곱한 과세표준에 누진세율을 적용하고 도시지역분과
+ * 지방교육세를 더한다. 1세대 1주택이고 공시가격이 9억 원 이하이면 특례세율·낮은 공정시장가액비율을 쓴다.
+ * 세부담상한, 지방자치단체 조례 탄력세율, 소방분 지역자원시설세, 종합부동산세는 반영하지 않는다.
+ */
+export function propertyTax(
+  publicPriceWon: number,
+  singleHome: boolean,
+  cfg: RulesConfig['propertyTax'],
+): PropertyTaxResult {
+  const special = singleHome && publicPriceWon <= cfg.singleHomeMaxPublicPriceWon;
+  const fair = special
+    ? bracketFor(cfg.singleHomeFairMarket, publicPriceWon).ratePercent
+    : cfg.fairMarketPercent;
+  const taxBaseWon = mulPercent(publicPriceWon, fair);
+  const baseTaxWon = progressive(taxBaseWon, special ? cfg.singleHomeBrackets : cfg.brackets);
+  const urbanAreaWon = mulPercent(taxBaseWon, cfg.urbanAreaPercent);
+  const propertyTaxWon = baseTaxWon + urbanAreaWon;
+  const localEducationTaxWon = mulPercent(propertyTaxWon, cfg.localEducationPercent);
+
+  const notes: string[] = [
+    '세부담상한(전년 대비 상한), 지자체 조례 탄력세율, 소방분 지역자원시설세는 반영하지 않았습니다. 도시지역(도시계획구역) 주택을 가정해 도시지역분을 더했습니다.',
+  ];
+  if (singleHome && !special) {
+    notes.push('공시가격이 9억 원을 넘으면 1세대 1주택 특례를 적용하지 않고 일반 세율로 계산합니다.');
+  }
+  return {
+    singleHomeApplied: special,
+    fairMarketPercent: fair,
+    taxBaseWon,
+    baseTaxWon,
+    urbanAreaWon,
+    propertyTaxWon,
+    localEducationTaxWon,
+    totalWon: propertyTaxWon + localEducationTaxWon,
     notes,
   };
 }
