@@ -52,7 +52,7 @@ body {
 }
 
 .page {
-  max-width: 1120px;
+  max-width: 1480px;
   margin: 0 auto;
   padding: 24px 16px 56px;
 }
@@ -78,12 +78,32 @@ body {
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  grid-template-columns: minmax(0, 1fr) 320px;
   gap: 20px;
   align-items: start;
 }
 
-@media (max-width: 860px) {
+/* 입력 폼은 넓은 화면에서 2단으로 나눠 세로 스크롤을 줄인다 */
+.form-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 28px;
+}
+@media (min-width: 1100px) {
+  .form-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+  .results {
+    position: sticky;
+    top: 16px;
+  }
+}
+.form .col > :first-child {
+  margin-top: 0;
+}
+
+@media (max-width: 1099px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
   }
