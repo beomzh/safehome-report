@@ -3,6 +3,7 @@
 import type { Dispatch, FormEvent, ReactNode, SetStateAction } from 'react';
 import { GAP_FLAGS } from '../form';
 import type { FormState, Kind, MarketSource } from '../form';
+import { RegistryImport } from './RegistryImport';
 
 interface Props {
   form: FormState;
@@ -135,11 +136,13 @@ export function InputForm({ form, setForm, errors, onSubmit, onReset, extra, mar
         등기사항전부증명서 내용을 직접 입력 (전체 분석)
       </label>
       <p className="hint">
-        PDF 자동 분석은 준비 중입니다. 입력하지 않으면 권리분석은 하지 않고 “판단 보류”로 표시됩니다.
+        PDF에서 복사한 텍스트를 붙여넣어 자동으로 채우거나 직접 입력할 수 있습니다. 입력하지 않으면 권리분석은
+        하지 않고 “판단 보류”로 표시됩니다.
       </p>
 
       {form.includeRegistry && (
         <div className="registry">
+          <RegistryImport setForm={setForm} />
           <label className="field">
             <span>갑구 현재 소유자 성명 (공동소유는 쉼표로 구분)</span>
             <input
