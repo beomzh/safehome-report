@@ -26,13 +26,21 @@
 - 오류 코드 예: 20 키 없음/접근 거부, 22 일일 한도 초과, 23 초당 한도 초과, 30 미등록 키, 31 만료 키.
 - 건축물대장 표제부: `http://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo`, 월 단위 갱신, `_type=json` 으로 JSON 요청 가능, 활용 신청은 PC 버전에서만 가능.
 
-## 확인하지 못한 것 (키 발급 후 검증)
+## 실제 호출로 확인한 사실 (2026-11-09, 강남구 11680 · 2025-10)
 
-- 응답 필드명(거래금액, 전용면적, 계약일 등). 상세 페이지에는 `header`/`body` 만 있고 필드 목록은 기술문서(hwp)에 있다. **실제 응답 한 건을 저장해 계약 테스트 픽스처로 쓰고** 그 구조에 맞춰 어댑터를 쓴다.
-- `numOfRows` 최대값(자료마다 1000/9999로 설명이 엇갈림).
+- 두 API 모두 HTTP 200, `resultCode 000`, 응답 끝에 `numOfRows`·`pageNo`·`totalCount`(매매 311건, 전월세 2,073건)가 있다.
+- **아파트 매매** 항목 필드: `aptNm`(단지명), `dealAmount`(만원, 쉼표 포함 예 `154,000`), `excluUseAr`(전용면적 ㎡), `dealYear`/`dealMonth`/`dealDay`, `floor`, `buildYear`, `umdNm`, `jibun`, `sggCd`, `cdealType`·`cdealDay`(**해제 시 값이 채워지고 평소에는 공백**), `dealingGbn`, `rgstDate` 등
+- **아파트 전월세** 항목 필드: `aptNm`, `deposit`(만원, 쉼표 포함), `monthlyRent`(만원, 전세는 0), `excluUseAr`, `dealYear`/`dealMonth`/`dealDay`, `contractType`, `contractTerm`, `preDeposit`, `preMonthlyRent`, `floor`, `buildYear` 등
+- 발급받은 키는 **Encoding 형식(% 포함)** 이었고 그대로 쓰면 동작했다. Decoding 형식 키를 `encodeURIComponent` 로 인코딩하는 경로는 단위 테스트로만 확인했다(실제 호출 미확인).
+- `numOfRows=100` 으로 여러 페이지를 받는 것은 동작한다. 허용 최대값은 확인하지 못했다.
+- 실제 응답 샘플은 `tests/fixtures/public-data/` 에 있고 계약 테스트에 쓴다. 이 응답에는 키가 포함되지 않는다.
+- 현재 앱이 쓰는 것은 아파트 **매매** API 뿐이다. 깡통전세 판단의 시세는 매매 시세와 비교하기 때문이다(전월세 API는 전세가율 참고용으로 후속 검토).
+
+## 확인하지 못한 것
+
+- `numOfRows` 허용 최대값(자료마다 1000/9999로 설명이 엇갈림).
 - 다가구·오피스텔·연립다세대 API의 엔드포인트와 요청 변수.
 - 건축물대장 요청 변수(`sigunguCd`, `bjdongCd`, `bun`, `ji`)의 필수 여부와 코드 형식.
-- 인증키 사용 방식: Encoding/Decoding 키 중 어떤 것을 쓸지(Decoding 키를 `URLSearchParams` 로 인코딩하는 방식이 혼란이 적다는 자료가 있으나 실제 호출로 확인).
 - 공시가격(공동주택가격) API와 중개업 조회 API는 아직 후보를 정하지 못했다(ROADMAP M0).
 
 ## 주의

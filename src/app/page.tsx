@@ -6,7 +6,10 @@ export default function Home() {
     <main className="page">
       <header className="page-header">
         <h1>계약 전 위험 신호 점검</h1>
-        <p className="muted">입력한 정보는 이 브라우저에서만 계산되며 서버나 외부로 전송되지 않습니다.</p>
+        <p className="muted">
+          분석 계산은 이 브라우저에서만 이루어집니다. 실거래가 조회를 쓸 때만 법정동코드·면적·단지명이
+          공공데이터포털로 전송되며, 성명·금액·재무 정보는 전송되지 않습니다.
+        </p>
       </header>
       <Disclaimer />
       <Analyzer />
