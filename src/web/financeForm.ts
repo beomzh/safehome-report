@@ -14,6 +14,8 @@ export interface FinanceFormState {
   autoCosts: boolean;
   /** 월세 금액(만원) — 월세 중개보수 환산에 사용 */
   monthlyRentManwon: string;
+  /** AI 제안으로 채워진 대출 기준값 칸 이름들. 사용자가 그 칸을 직접 고치면 목록에서 빠진다. 리포트에 공식 값이 아님을 표시한다 */
+  aiFields: string[];
   assetsManwon: string;
   annualIncomeManwon: string;
   existingAnnualDebtManwon: string;
@@ -36,6 +38,7 @@ export const emptyFinanceForm = (): FinanceFormState => ({
   enabled: false,
   autoCosts: true,
   monthlyRentManwon: '',
+  aiFields: [],
   assetsManwon: '',
   annualIncomeManwon: '',
   existingAnnualDebtManwon: '',
@@ -194,6 +197,20 @@ function parseCommon(form: FinanceFormState, ctx: FinanceContext, errors: string
   };
 }
 
+const AI_FIELD_LABEL: Record<string, string> = {
+  ltvLimitPercent: 'LTV 한도',
+  dsrLimitPercent: 'DSR 한도',
+  annualRatePercent: '예상 금리',
+  stressAddPercent: '스트레스 가산 금리',
+  termYears: '대출 기간',
+};
+
+/** AI 제안이 남아 있는 항목을 밝히는 리포트 주의 문구 */
+export function aiAssumptionNote(fields: readonly string[]): string {
+  const names = fields.map((k) => AI_FIELD_LABEL[k] ?? k).join(', ');
+  return `다음 대출 기준값은 AI가 제안한 값입니다: ${names}. 공식 값이 아니며 최신 규제를 반영하지 못했을 수 있으니 은행·공식 안내의 값으로 다시 계산해 보세요.`;
+}
+
 const GENERIC_ERROR = '대출·자금 계획 입력값이 올바르지 않습니다. 금액과 비율을 확인하세요.';
 
 export function buildAffordabilityInput(
@@ -222,7 +239,14 @@ export function buildAffordabilityInput(
 }
 
 export type FinancePlanResult =
-  | { ok: true; requirements: RequirementsInput; affordability?: AffordabilityInput; costNotes: string[] }
+  | {
+      ok: true;
+      requirements: RequirementsInput;
+      affordability?: AffordabilityInput;
+      costNotes: string[];
+      /** 대출 기준값의 출처에 대한 주의 (AI 제안 적용 시) */
+      assumptionNotes: string[];
+    }
   | { ok: false; errors: string[] };
 
 /**
@@ -246,6 +270,7 @@ export function buildFinancePlan(
   const annualIncome = hasAssets && hasIncome ? reqWon('연소득', form.annualIncomeManwon) : undefined;
   const c = parseCommon(form, ctx, errors, config);
   if (errors.length > 0) return { ok: false, errors };
+  const assumptionNotes = form.aiFields.length > 0 ? [aiAssumptionNote(form.aiFields)] : [];
 
   const base = {
     kind: ctx.kind,
@@ -261,7 +286,7 @@ export function buildFinancePlan(
   if (!req.success) return { ok: false, errors: [GENERIC_ERROR] };
 
   if (assets === undefined || annualIncome === undefined) {
-    return { ok: true, requirements: req.data, costNotes: c.costNotes };
+    return { ok: true, requirements: req.data, costNotes: c.costNotes, assumptionNotes };
   }
   const aff = affordabilityInputSchema.safeParse({
     ...base,
@@ -269,5 +294,11 @@ export function buildFinancePlan(
     downPaymentPercent: c.downPaymentPercent,
   });
   if (!aff.success) return { ok: false, errors: [GENERIC_ERROR] };
-  return { ok: true, requirements: req.data, affordability: aff.data, costNotes: c.costNotes };
+  return {
+    ok: true,
+    requirements: req.data,
+    affordability: aff.data,
+    costNotes: c.costNotes,
+    assumptionNotes,
+  };
 }

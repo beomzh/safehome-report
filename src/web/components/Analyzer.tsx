@@ -26,6 +26,7 @@ interface Result {
   finance?: Affordability;
   requirements?: Requirements;
   costNotes?: string[];
+  assumptionNotes?: string[];
 }
 
 export function Analyzer() {
@@ -42,6 +43,7 @@ export function Analyzer() {
     let finance: Affordability | undefined;
     let requirements: Requirements | undefined;
     let costNotes: string[] = [];
+    let assumptionNotes: string[] = [];
     if (fin.enabled && built.ok) {
       const plan = buildFinancePlan(
         fin,
@@ -57,6 +59,7 @@ export function Analyzer() {
       else {
         requirements = evaluateRequirements(plan.requirements);
         costNotes = plan.costNotes;
+        assumptionNotes = plan.assumptionNotes;
         if (plan.affordability) finance = evaluateAffordability(plan.affordability);
       }
     }
@@ -75,6 +78,7 @@ export function Analyzer() {
       finance,
       requirements,
       costNotes,
+      assumptionNotes,
     });
     setDialogOpen(true);
   };
@@ -99,7 +103,7 @@ export function Analyzer() {
         onReset={reset}
         topSlot={<ListingImport setForm={setForm} />}
         marketSlot={<MarketLookup form={form} setForm={setForm} />}
-        extra={<FinanceFields fin={fin} setFin={setFin} kind={form.kind} />}
+        extra={<FinanceFields fin={fin} setFin={setFin} kind={form.kind} amountManwon={form.amountManwon} />}
       />
       <div className="results">
         {result && info ? (
@@ -139,6 +143,7 @@ export function Analyzer() {
               amountWon={result.input.contract.amount}
               grade={result.report.grade}
               costNotes={result.costNotes ?? []}
+              assumptionNotes={result.assumptionNotes ?? []}
             />
           )}
           {result.finance && <FinanceReport result={result.finance} grade={result.report.grade} />}

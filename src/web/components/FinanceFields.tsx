@@ -2,17 +2,21 @@
 
 import type { Dispatch, SetStateAction } from 'react';
 import type { Kind } from '../form';
+import { editField } from '../assumptions';
 import type { FinanceFormState } from '../financeForm';
+import { AssumptionAdvisor } from './AssumptionAdvisor';
 
 interface Props {
   fin: FinanceFormState;
   setFin: Dispatch<SetStateAction<FinanceFormState>>;
   kind: Kind;
+  /** 메인 폼의 보증금(매매가) 입력값 (만원) — AI 기준값 제안에 사용 */
+  amountManwon: string;
 }
 
-type TextKey = Exclude<keyof FinanceFormState, 'enabled' | 'autoCosts'>;
+type TextKey = Exclude<keyof FinanceFormState, 'enabled' | 'autoCosts' | 'aiFields'>;
 
-export function FinanceFields({ fin, setFin, kind }: Props) {
+export function FinanceFields({ fin, setFin, kind, amountManwon }: Props) {
   const isSale = kind === 'sale';
   const isJeonse = kind === 'jeonse';
 
@@ -24,7 +28,10 @@ export function FinanceFields({ fin, setFin, kind }: Props) {
         autoComplete="off"
         placeholder={placeholder}
         value={fin[key]}
-        onChange={(e) => setFin((f) => ({ ...f, [key]: e.target.value }))}
+        onChange={(e) =>
+          // AI 제안으로 채운 칸을 직접 고치면 그 칸만 "AI 제안" 표시에서 뺀다 (사용자가 값을 책임진다)
+          setFin((f) => editField(f, key, e.target.value))
+        }
       />
       {hint && <small className="hint">{hint}</small>}
     </label>
@@ -48,6 +55,8 @@ export function FinanceFields({ fin, setFin, kind }: Props) {
 
       {fin.enabled && (
         <div className="registry">
+          <AssumptionAdvisor setFin={setFin} kind={kind} amountManwon={amountManwon} />
+
           <fieldset>
             <legend>내 재무 정보 (선택 — 비우면 "필요 조건"만 계산)</legend>
             {text('assetsManwon', '보유 자산·자기자금 (만원, 선택)', '예: 20,000')}
