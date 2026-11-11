@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { parseTradeXml } from '../../src/adapters/public-data/aptTrade';
 import { HOUSING } from '../../src/adapters/public-data/housing';
 import { createTradeService } from '../../src/adapters/public-data/tradeService';
+import { config } from '../helpers/builders';
 import { parseMarketQuery } from '../../src/web/marketQuery';
 
 // 연립다세대 응답 필드는 공식 명세 기준 추정이다 (활용신청 전, 실제 응답 미검증). 합성 응답으로 동작만 확인한다.
@@ -61,12 +62,46 @@ describe('주택 유형별 매매 실거래', () => {
     expect(r.totalCount).toBe(94);
   });
 
-  it('명세: 아파트·오피스텔만 검증됨으로 표시된다', () => {
+  it('단독·다가구 실제 응답(2026-11-11, 강남구 2025-10)을 연면적·법정동으로 읽는다', () => {
+    const xml = readFileSync(
+      new URL('../fixtures/public-data/house-trade-11680-202510.xml', import.meta.url),
+      'utf-8',
+    );
+    const r = parseTradeXml(xml, HOUSING.house.nameTag, HOUSING.house.areaTag);
+    expect(r.skipped).toBe(0);
+    expect(r.totalCount).toBe(7);
+    expect(r.records[0]).toMatchObject({
+      amountWon: 5_600_000_000,
+      areaM2: 504.22,
+      dealDate: '2025-10-27',
+      complexName: '역삼동',
+    });
+  });
+
+  it('단독·다가구는 연면적 ±20% 로 시세를 추정하고 단지 비교는 하지 않는다', async () => {
+    const xml = readFileSync(
+      new URL('../fixtures/public-data/house-trade-11680-202510.xml', import.meta.url),
+      'utf-8',
+    );
+    const fn = (async () => new Response(xml)) as typeof fetch;
+    const s = createTradeService({ apiKey: 'k', fetchFn: fn });
+    const r = await s.estimate({
+      housing: 'house',
+      lawdCd: '11680',
+      asOf: '2025-11-05',
+      targetAreaM2: 500,
+      config: { ...config.marketEstimate, windowMonths: 1 },
+    });
+    expect(r.market?.estimatedValue).toBeGreaterThan(0);
+    expect(r.similar).toEqual([]);
+  });
+
+  it('명세: 아파트·오피스텔·단독다가구만 검증됨으로 표시된다', () => {
     expect(
       Object.entries(HOUSING)
         .filter(([, v]) => v.verified)
         .map(([k]) => k),
-    ).toEqual(['apt', 'officetel']);
+    ).toEqual(['apt', 'officetel', 'house']);
   });
 
   it('쿼리의 housing 은 기본 apt 이고 알 수 없는 값은 거부한다', () => {

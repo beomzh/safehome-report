@@ -1,4 +1,4 @@
-export type MarketHousing = 'apt' | 'rowhouse' | 'officetel';
+export type MarketHousing = 'apt' | 'rowhouse' | 'officetel' | 'house';
 
 export interface MarketQuery {
   housing: MarketHousing;
@@ -19,8 +19,8 @@ export function parseMarketQuery(
     return { ok: false, error: '전용면적(㎡)을 0보다 큰 숫자로 입력하세요. 예: 84.99' };
   }
   const housing = (params.get('housing') ?? 'apt').trim();
-  if (housing !== 'apt' && housing !== 'rowhouse' && housing !== 'officetel')
-    return { ok: false, error: '주택 유형은 apt, rowhouse, officetel 중 하나여야 합니다.' };
+  if (housing !== 'apt' && housing !== 'rowhouse' && housing !== 'officetel' && housing !== 'house')
+    return { ok: false, error: '주택 유형은 apt, rowhouse, officetel, house 중 하나여야 합니다.' };
   const complexName = (params.get('complexName') ?? '').trim();
   return {
     ok: true,

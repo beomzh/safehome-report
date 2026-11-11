@@ -73,13 +73,15 @@ export function MarketLookup({ form, setForm }: Props) {
       setMessage({
         tone: regionWide || housing !== 'apt' || data.market.confidence === 'low' ? 'warn' : 'ok',
         text: `최근 ${data.windowMonths}개월 거래 ${data.sampleCount}건의 중앙값 ${formatWon(data.market.estimatedValue)}을 시세로 입력했습니다${range}.${
-          housing !== 'apt'
-            ? ' 빌라·오피스텔은 같은 건물의 거래가 적고 호실마다 가격 차이가 커서 신뢰도를 낮게 표시합니다. 참고용으로만 쓰세요.'
-            : regionWide
-              ? ' 단지명 없이 지역 전체 거래로 계산해 부정확합니다. 단지명을 입력하면 정확해집니다.'
-              : data.market.confidence === 'low'
-                ? ' 표본이 적어 신뢰도가 낮습니다.'
-                : ''
+          housing === 'house'
+            ? ' 단독·다가구는 건물마다 대지·구조가 달라 연면적 ±20% 거래의 중앙값은 참고용일 뿐입니다. 신뢰도를 낮게 표시합니다.'
+            : housing !== 'apt'
+              ? ' 빌라·오피스텔은 같은 건물의 거래가 적고 호실마다 가격 차이가 커서 신뢰도를 낮게 표시합니다. 참고용으로만 쓰세요.'
+              : regionWide
+                ? ' 단지명 없이 지역 전체 거래로 계산해 부정확합니다. 단지명을 입력하면 정확해집니다.'
+                : data.market.confidence === 'low'
+                  ? ' 표본이 적어 신뢰도가 낮습니다.'
+                  : ''
         }`,
       });
     } catch {
@@ -103,6 +105,7 @@ export function MarketLookup({ form, setForm }: Props) {
           <option value="apt">아파트</option>
           <option value="rowhouse">연립·다세대(빌라) — 미검증</option>
           <option value="officetel">오피스텔</option>
+          <option value="house">단독·다가구 (연면적 기준)</option>
         </select>
       </label>
       <div className="row2">
@@ -117,7 +120,7 @@ export function MarketLookup({ form, setForm }: Props) {
           />
         </label>
         <label className="field">
-          <span>전용면적 (㎡)</span>
+          <span>{housing === 'house' ? '연면적 (㎡, 건물 전체)' : '전용면적 (㎡)'}</span>
           <input
             inputMode="decimal"
             autoComplete="off"
@@ -128,10 +131,10 @@ export function MarketLookup({ form, setForm }: Props) {
         </label>
       </div>
       <label className="field">
-        <span>단지명 (선택, 비우면 지역 전체)</span>
+        <span>{housing === 'house' ? '법정동명 (선택, 예: 역삼동)' : '단지명 (선택, 비우면 지역 전체)'}</span>
         <input
           autoComplete="off"
-          placeholder="실거래 목록의 단지명과 같게"
+          placeholder={housing === 'house' ? '예: 역삼동' : '실거래 목록의 단지명과 같게'}
           value={complexName}
           onChange={(e) => setForm((f) => ({ ...f, lookupComplexName: e.target.value }))}
         />
