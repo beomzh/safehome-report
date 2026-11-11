@@ -103,7 +103,7 @@ export function MarketLookup({ form, setForm }: Props) {
           }
         >
           <option value="apt">아파트</option>
-          <option value="rowhouse">연립·다세대(빌라) — 미검증</option>
+          <option value="rowhouse">연립·다세대(빌라)</option>
           <option value="officetel">오피스텔</option>
           <option value="house">단독·다가구 (연면적 기준)</option>
         </select>

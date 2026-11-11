@@ -1,6 +1,6 @@
 /**
  * 매매 실거래 API 종류. 아파트·오피스텔·단독다가구는 실제 응답으로 필드를 확인했다(오피스텔 2026-11-09, 단독다가구 2026-11-11).
- * 연립다세대는 활용신청 전이라(오류 코드 30) 응답 필드명이 공식 명세 기준 추정이다.
+ * 연립다세대도 실제 응답으로 확인했다(2026-11-11, 엔드포인트는 RTMSDataSvcRHTrade2 — 구버전 RTMSDataSvcRHTrade 는 폐기됨).
  */
 export const HOUSING_TYPES = ['apt', 'rowhouse', 'officetel', 'house'] as const;
 export type HousingType = (typeof HOUSING_TYPES)[number];
@@ -36,12 +36,12 @@ export const HOUSING: Record<HousingType, HousingSpec> = {
   },
   rowhouse: {
     label: '연립·다세대(빌라)',
-    endpoint: `${BASE}/RTMSDataSvcRHTrade/getRTMSDataSvcRHTrade`,
+    endpoint: `${BASE}/RTMSDataSvcRHTrade2/getRTMSDataSvcRHTrade2`,
     nameTag: 'mhouseNm',
     areaTag: 'excluUseAr',
     supportsSimilar: true,
-    applyUrl: 'https://www.data.go.kr/tcs/dss/selectDataSetList.do?keyword=연립다세대 매매 실거래가',
-    verified: false,
+    applyUrl: 'https://www.data.go.kr/data/15126467/openapi.do',
+    verified: true,
   },
   officetel: {
     label: '오피스텔',
@@ -49,7 +49,7 @@ export const HOUSING: Record<HousingType, HousingSpec> = {
     nameTag: 'offiNm',
     areaTag: 'excluUseAr',
     supportsSimilar: true,
-    applyUrl: 'https://www.data.go.kr/tcs/dss/selectDataSetList.do?keyword=오피스텔 매매 실거래가',
+    applyUrl: 'https://www.data.go.kr/data/15126464/openapi.do',
     verified: true,
   },
   house: {
@@ -59,7 +59,7 @@ export const HOUSING: Record<HousingType, HousingSpec> = {
     areaTag: 'totalFloorAr',
     areaToleranceRatio: 0.2,
     supportsSimilar: false,
-    applyUrl: 'https://www.data.go.kr/tcs/dss/selectDataSetList.do?keyword=단독다가구 매매 실거래가',
+    applyUrl: 'https://www.data.go.kr/data/15126465/openapi.do',
     verified: true,
   },
 };
