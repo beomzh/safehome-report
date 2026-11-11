@@ -40,7 +40,7 @@
 
 - **오피스텔은 활용신청 승인 후 실제 응답으로 확인했다**: `offiNm`, `dealAmount`(만원, 쉼표), `excluUseAr`, `dealYear/Month/Day`, `cdealType`, `floor`, `buildYear`, `umdNm`, `jibun`, `totalCount`. 샘플은 `tests/fixtures/public-data/offi-trade-11680-202510.xml`.
 - **단독/다가구는 2026-11-11 승인 후 실제 응답으로 확인했다**: `houseType`(단독/다가구), `dealAmount`(만원), `totalFloorAr`(연면적㎡), `plottageAr`(대지면적㎡), `umdNm`(법정동), `jibun`(마스킹), `buildYear`, `dealYear/Month/Day`. 건물명·전용면적이 없어 앱은 연면적 ±20% 와 법정동명으로 시세를 추정한다(신뢰도 낮음). 샘플은 `tests/fixtures/public-data/house-trade-11680-202510.xml`.
-- 연립다세대는 2026-11-11 에도 코드 30(승인 전)이다.
+- **연립다세대는 엔드포인트를 잘못 쓰고 있었다**: 정확한 주소는 `RTMSDataSvcRHTrade2/getRTMSDataSvcRHTrade2`(상세 페이지 swagger 의 host 로 확인)이고, 구버전 `RTMSDataSvcRHTrade` 는 폐기되어 승인된 키로도 코드 30 이 돌아왔다. 올바른 주소로 실제 응답을 확인했다(2026-11-11): `mhouseNm`(건물명), `excluUseAr`, `dealAmount`, `houseType`(연립/다세대), `umdNm`, `landAr`. 샘플은 `tests/fixtures/public-data/rowhouse-trade-11680-202510.xml`. 다른 API도 막히면 코드 30 만 믿지 말고 상세 페이지의 swagger host 를 확인한다.
 
 - 엔드포인트 경로는 존재한다: `RTMSDataSvcRHTrade/getRTMSDataSvcRHTrade`(연립다세대), `RTMSDataSvcOffiTrade/getRTMSDataSvcOffiTrade`(오피스텔), `RTMSDataSvcSHTrade/getRTMSDataSvcSHTrade`(단독/다가구). 현재 키로 호출하면 세 곳 모두 오류 코드 30(등록되지 않은 서비스 키)이 돌아온다. **각 API 상세 페이지에서 따로 활용신청해야 한다.**
 - 따라서 응답 필드는 실제로 확인하지 못했다. 앱은 연립다세대 `mhouseNm`, 오피스텔 `offiNm` 을 건물명으로, 나머지(`dealAmount`, `excluUseAr`, `dealYear/Month/Day`, `cdealType`)는 아파트와 같다고 가정해 읽는다. 이 가정이 틀리면 항목이 건너뛰어져 "조건에 맞는 거래 없음"으로 나타난다.
@@ -49,7 +49,6 @@
 ## 확인하지 못한 것
 
 - `numOfRows` 허용 최대값(자료마다 1000/9999로 설명이 엇갈림).
-- 다가구·오피스텔·연립다세대 API의 실제 응답 필드(활용신청 전).
 - 건축물대장 요청 변수(`sigunguCd`, `bjdongCd`, `bun`, `ji`)의 필수 여부와 코드 형식.
 - 공시가격(공동주택가격) API와 중개업 조회 API는 아직 후보를 정하지 못했다(ROADMAP M0).
 

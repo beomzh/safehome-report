@@ -6,7 +6,7 @@ import { createTradeService } from '../../src/adapters/public-data/tradeService'
 import { config } from '../helpers/builders';
 import { parseMarketQuery } from '../../src/web/marketQuery';
 
-// 연립다세대 응답 필드는 공식 명세 기준 추정이다 (활용신청 전, 실제 응답 미검증). 합성 응답으로 동작만 확인한다.
+// 합성 응답으로 동작을 확인하고, 실제 응답 픽스처(아파트·오피스텔·연립다세대·단독다가구)로 필드를 검증한다.
 const item = (nameTag: string, name: string, amount: string) =>
   `<item><${nameTag}>${name}</${nameTag}><cdealType> </cdealType><dealAmount>${amount}</dealAmount>` +
   `<dealDay>10</dealDay><dealMonth>10</dealMonth><dealYear>2026</dealYear><excluUseAr>45.5</excluUseAr></item>`;
@@ -96,12 +96,28 @@ describe('주택 유형별 매매 실거래', () => {
     expect(r.similar).toEqual([]);
   });
 
-  it('명세: 아파트·오피스텔·단독다가구만 검증됨으로 표시된다', () => {
+  it('연립다세대 실제 응답(2026-11-11, 강남구 2025-10)을 읽는다', () => {
+    const xml = readFileSync(
+      new URL('../fixtures/public-data/rowhouse-trade-11680-202510.xml', import.meta.url),
+      'utf-8',
+    );
+    const r = parseTradeXml(xml, HOUSING.rowhouse.nameTag, HOUSING.rowhouse.areaTag);
+    expect(r.skipped).toBe(0);
+    expect(r.records[0]).toMatchObject({
+      amountWon: 680_000_000,
+      areaM2: 29.96,
+      dealDate: '2025-10-15',
+      complexName: '골드캐슬',
+    });
+    expect(HOUSING.rowhouse.endpoint).toContain('RTMSDataSvcRHTrade2/getRTMSDataSvcRHTrade2');
+  });
+
+  it('명세: 모든 유형이 실제 응답으로 검증됨으로 표시된다', () => {
     expect(
       Object.entries(HOUSING)
         .filter(([, v]) => v.verified)
         .map(([k]) => k),
-    ).toEqual(['apt', 'officetel', 'house']);
+    ).toEqual(['apt', 'rowhouse', 'officetel', 'house']);
   });
 
   it('쿼리의 housing 은 기본 apt 이고 알 수 없는 값은 거부한다', () => {
