@@ -17,8 +17,33 @@
   --radius: 10px;
 }
 
+/* 테마: 기본은 시스템 설정을 따르고, data-theme 가 light/dark 이면 그 값을 강제한다 */
+:root {
+  color-scheme: light dark;
+}
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #12161d;
+  --surface: #1b212b;
+  --text: #e8ecf2;
+  --muted: #9aa5b5;
+  --border: #2f3744;
+  --accent: #6c93ff;
+  --accent-text: #0b1020;
+  --red: #ff8a80;
+  --red-bg: #3a1f1f;
+  --yellow: #ffd27a;
+  --yellow-bg: #3a2f14;
+  --green: #7fd69a;
+  --green-bg: #17301f;
+  --gray: #c3cad5;
+  --gray-bg: #272e39;
+}
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --bg: #12161d;
     --surface: #1b212b;
     --text: #e8ecf2;
@@ -584,4 +609,38 @@ dialog.report-dialog::backdrop {
 .rate-block .table caption {
   text-align: left;
   padding-bottom: 4px;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.theme-toggle button {
+  border: 0;
+  background: var(--surface);
+  color: var(--muted);
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.theme-toggle button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+.page-header {
+  position: relative;
+}
+.page-header .theme-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+@media (max-width: 560px) {
+  .page-header .theme-toggle {
+    position: static;
+    margin-bottom: 8px;
+  }
 }
