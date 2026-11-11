@@ -42,6 +42,34 @@ export function RateBlock({ info, today }: { info: LoanRateInfo | undefined; tod
         </table>
       )}
 
+      {info.grid && (
+        <div className="table-wrap">
+          <table className="table">
+            <caption className="hint">{info.grid.basis}</caption>
+            <thead>
+              <tr>
+                <th scope="col">부부합산 연소득</th>
+                {info.grid.cols.map((c) => (
+                  <th key={c} scope="col">
+                    {c}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {info.grid.rows.map((r) => (
+                <tr key={r.label}>
+                  <th scope="row">{r.label}</th>
+                  {r.percents.map((p, i) => (
+                    <td key={info.grid?.cols[i]}>{pct(p)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {info.termTable && (
         <div className="table-wrap">
           <table className="table">
