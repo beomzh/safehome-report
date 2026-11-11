@@ -105,3 +105,23 @@ describe('estimateMarketValue', () => {
     expect(estimateMarketValue(data, params())).toEqual(estimateMarketValue(data, params()));
   });
 });
+
+describe('estimateMarketValue — 법정동 필터', () => {
+  const records = [
+    rec(300_000_000, { dongName: '신길동', complexName: '가빌라' }),
+    rec(320_000_000, { dongName: '신길동', complexName: '나빌라' }),
+    rec(900_000_000, { dongName: '여의도동', complexName: '다빌라' }),
+  ];
+  it('단지명이 없고 법정동명이 있으면 같은 동 거래만 쓴다', () => {
+    const r = estimateMarketValue(records, params({ dongName: '신길동' }));
+    expect(r.sampleCount).toBe(2);
+    expect(r.market?.estimatedValue).toBe(310_000_000);
+  });
+  it('단지명이 있으면 단지명이 우선한다', () => {
+    const r = estimateMarketValue(records, params({ complexName: '다빌라', dongName: '신길동' }));
+    expect(r.sampleCount).toBe(1);
+  });
+  it('법정동명이 없으면 지역 전체를 쓴다', () => {
+    expect(estimateMarketValue(records, params()).sampleCount).toBe(3);
+  });
+});

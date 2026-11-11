@@ -17,6 +17,8 @@ const raw = (over: Partial<RawListing> = {}): RawListing => ({
   complexName: '가나다 아파트',
   address: null,
   areaM2: 84.99,
+  areaPyeong: null,
+  housingType: null,
   floor: 12,
   builtYear: 2012,
   warnings: [],
@@ -113,5 +115,22 @@ describe('parseListingUrl', () => {
     expect(parseListingUrl('https://example.com/x')?.platform).toBe('other');
     expect(parseListingUrl('javascript:alert(1)')).toBeNull();
     expect(parseListingUrl('not a url')).toBeNull();
+  });
+});
+
+describe('면적·유형 추출 (평수 환산)', () => {
+  it('전용면적이 평으로만 있으면 3.3058 로 환산한다 (8.30평 → 27.44㎡)', () => {
+    const f = sanitizeListing(raw({ areaM2: null, areaPyeong: 8.3, housingType: 'rowhouse' }));
+    expect(f.areaM2).toBe(27.44);
+    expect(f.housingType).toBe('rowhouse');
+  });
+
+  it('㎡ 값이 있으면 평수보다 우선한다', () => {
+    expect(sanitizeListing(raw({ areaM2: 59.9, areaPyeong: 30 })).areaM2).toBe(59.9);
+  });
+
+  it('프롬프트는 공급/전용 구분과 평수 처리를 지시한다', () => {
+    expect(SYSTEM_PROMPT).toContain('공급/전용');
+    expect(SYSTEM_PROMPT).toContain('areaPyeong');
   });
 });

@@ -51,6 +51,7 @@ export async function GET(request: Request) {
       asOf: todayIso(),
       targetAreaM2: parsed.query.areaM2,
       complexName: parsed.query.complexName,
+      dongName: parsed.query.dongName,
       config: rulesConfig.marketEstimate,
     });
     log.info(TAG, 'lookup_ok', {

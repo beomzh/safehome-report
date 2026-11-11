@@ -38,6 +38,10 @@ export interface FormState {
   lookupLawdCd: string;
   lookupAreaM2: string;
   lookupComplexName: string;
+  /** 법정동명 (주소에서 읽거나 직접 입력) */
+  lookupDongName: string;
+  /** 값이 바뀔 때마다 시세 조회를 자동 실행한다 (매물 설명 적용 시 증가) */
+  lookupNonce: number;
   owners: string;
   gapFlags: Record<GapFlagKey, boolean>;
   mortgages: MortgageRow[];
@@ -58,6 +62,8 @@ export const emptyForm = (): FormState => ({
   lookupLawdCd: '',
   lookupAreaM2: '',
   lookupComplexName: '',
+  lookupDongName: '',
+  lookupNonce: 0,
   owners: '',
   gapFlags: {
     trust: false,

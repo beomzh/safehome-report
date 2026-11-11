@@ -14,6 +14,8 @@ export const tradeRecordSchema = z.object({
   /** 계약일 YYYY-MM-DD (일자를 모르면 해당 월 1일로 정규화) */
   dealDate: isoDateSchema,
   complexName: z.string().optional(),
+  /** 법정동(읍·면·동)명 */
+  dongName: z.string().optional(),
   /** 해제(취소)된 거래 */
   cancelled: z.boolean(),
 });
@@ -28,6 +30,8 @@ export const estimateParamsSchema = z.object({
   minSamples: z.number().int().positive(),
   /** 단지(건물)명. 있으면 같은 이름의 거래만 사용 */
   complexName: z.string().optional(),
+  /** 법정동명. 단지명이 없을 때 같은 동의 거래만 사용 */
+  dongName: z.string().optional(),
 });
 export type EstimateParams = z.infer<typeof estimateParamsSchema>;
 
@@ -57,6 +61,7 @@ export function estimateMarketValue(rawRecords: unknown, rawParams: unknown): Ma
   const records = z.array(tradeRecordSchema).parse(rawRecords);
   const p = estimateParamsSchema.parse(rawParams);
   const wanted = p.complexName?.trim() ? normalizeName(p.complexName) : undefined;
+  const wantedDong = p.dongName?.trim() ? normalizeName(p.dongName) : undefined;
 
   const used = records.filter((r) => {
     if (r.cancelled) return false;
@@ -64,6 +69,12 @@ export function estimateMarketValue(rawRecords: unknown, rawParams: unknown): Ma
     const months = monthsBetween(r.dealDate, p.asOf);
     if (months < 0 || months > p.windowMonths) return false;
     if (wanted !== undefined && (!r.complexName || normalizeName(r.complexName) !== wanted)) return false;
+    if (
+      wanted === undefined &&
+      wantedDong !== undefined &&
+      (!r.dongName || normalizeName(r.dongName) !== wantedDong)
+    )
+      return false;
     return true;
   });
 
