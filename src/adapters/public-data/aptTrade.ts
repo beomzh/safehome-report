@@ -52,7 +52,7 @@ export function parseAptTradeXml(xml: string): ParsedTrades {
 }
 
 /** 단지(건물)명 태그만 다른 매매 실거래 응답을 같은 방식으로 정규화한다 */
-export function parseTradeXml(xml: string, nameTag: string): ParsedTrades {
+export function parseTradeXml(xml: string, nameTag: string, areaTag = 'excluUseAr'): ParsedTrades {
   const reasonCode = tag(xml, 'returnReasonCode');
   if (reasonCode !== undefined) {
     const msg = tag(xml, 'returnAuthMsg') ?? tag(xml, 'errMsg') ?? '';
@@ -80,7 +80,7 @@ export function parseTradeXml(xml: string, nameTag: string): ParsedTrades {
     const day = (tag(item, 'dealDay')?.trim() || '1').padStart(2, '0');
     const candidate = {
       amountWon: amountMan * 10_000,
-      areaM2: Number(tag(item, 'excluUseAr')),
+      areaM2: Number(tag(item, areaTag)),
       dealDate: `${year}-${month}-${day}`,
       complexName: decodeEntities((tag(item, nameTag) ?? '').trim()) || undefined,
       cancelled: (tag(item, 'cdealType') ?? '').trim() !== '',

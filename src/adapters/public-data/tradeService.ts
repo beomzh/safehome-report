@@ -67,7 +67,7 @@ export function createTradeService(opts: TradeServiceOptions) {
           signal: AbortSignal.timeout(timeoutMs),
         });
         if (!res.ok) throw new PublicDataError(`공공데이터 API HTTP ${res.status}`);
-        return parseTradeXml(await res.text(), spec.nameTag);
+        return parseTradeXml(await res.text(), spec.nameTag, spec.areaTag);
       } catch (e) {
         lastError = e;
         log('warn', 'public_data_retry', {
@@ -127,24 +127,31 @@ export function createTradeService(opts: TradeServiceOptions) {
       const months = monthsToFetch(args.asOf, args.config.windowMonths);
       const batches = await Promise.all(months.map((ym) => fetchMonth(args.lawdCd, ym, args.housing)));
       const all = batches.flat();
+      const spec = HOUSING[args.housing ?? 'apt'];
+      const tolerance =
+        spec.areaToleranceRatio !== undefined
+          ? args.targetAreaM2 * spec.areaToleranceRatio
+          : args.config.areaToleranceM2;
       const result = estimateMarketValue(all, {
         asOf: args.asOf,
         targetAreaM2: args.targetAreaM2,
-        areaToleranceM2: args.config.areaToleranceM2,
+        areaToleranceM2: tolerance,
         windowMonths: args.config.windowMonths,
         minSamples: args.config.minSamples,
         complexName: args.complexName,
       });
-      const similar = findSimilarComplexes(all, {
-        asOf: args.asOf,
-        targetAreaM2: args.targetAreaM2,
-        areaToleranceM2: args.config.areaToleranceM2,
-        windowMonths: args.config.windowMonths,
-        minTrades: 2,
-        limit: 5,
-        excludeComplexName: args.complexName,
-        referenceWon: result.market?.estimatedValue,
-      });
+      const similar = !spec.supportsSimilar
+        ? []
+        : findSimilarComplexes(all, {
+            asOf: args.asOf,
+            targetAreaM2: args.targetAreaM2,
+            areaToleranceM2: tolerance,
+            windowMonths: args.config.windowMonths,
+            minTrades: 2,
+            limit: 5,
+            excludeComplexName: args.complexName,
+            referenceWon: result.market?.estimatedValue,
+          });
       return { ...result, monthsQueried: months.length, similar };
     },
   };
