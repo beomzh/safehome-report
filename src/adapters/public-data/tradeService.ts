@@ -122,6 +122,7 @@ export function createTradeService(opts: TradeServiceOptions) {
       asOf: string;
       targetAreaM2: number;
       complexName?: string;
+      dongName?: string;
       config: RulesConfig['marketEstimate'];
     }): Promise<MarketEstimate & { monthsQueried: number; similar: SimilarComplex[] }> {
       const months = monthsToFetch(args.asOf, args.config.windowMonths);
@@ -139,6 +140,7 @@ export function createTradeService(opts: TradeServiceOptions) {
         windowMonths: args.config.windowMonths,
         minSamples: args.config.minSamples,
         complexName: args.complexName,
+        dongName: args.dongName,
       });
       const similar = !spec.supportsSimilar
         ? []

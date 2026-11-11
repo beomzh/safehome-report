@@ -27,6 +27,7 @@ describe('parseAptTradeXml — 실제 응답 픽스처', () => {
       areaM2: 31.402,
       dealDate: '2025-10-23',
       complexName: '삼성동힐스테이트 1단지',
+      dongName: '삼성동',
       cancelled: false,
     });
   });

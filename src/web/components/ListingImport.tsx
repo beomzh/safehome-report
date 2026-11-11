@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import type { ListingFields, UrlHint } from '../../adapters/llm/listing';
+import { findDongName, findSigungu } from '../../core';
 import type { FormState } from '../form';
 
 interface Props {
@@ -17,6 +18,13 @@ interface ListingResponse {
 }
 
 const KIND_LABEL = { jeonse: '전세', monthly: '월세', sale: '매매' } as const;
+const HOUSING_LABEL = {
+  apt: '아파트',
+  rowhouse: '연립·다세대(빌라)',
+  officetel: '오피스텔',
+  house: '단독·다가구',
+} as const;
+
 const PLATFORM_LABEL: Record<UrlHint['platform'], string> = {
   naver: '네이버 부동산',
   zigbang: '직방',
@@ -39,6 +47,7 @@ export function ListingImport({ setForm }: Props) {
     hint: UrlHint | null;
     truncated: boolean;
   } | null>(null);
+  const [regionNote, setRegionNote] = useState('');
   const [applied, setApplied] = useState(false);
 
   const extract = async () => {
@@ -74,12 +83,33 @@ export function ListingImport({ setForm }: Props) {
   const apply = () => {
     if (!result) return;
     const f = result.fields;
+    // 주소 → 시군구 법정동코드(검증된 표) · 법정동명. 모르면 비워 두고 직접 입력하게 한다
+    const region = f.address ? findSigungu(f.address) : null;
+    const dong = f.address ? findDongName(f.address) : undefined;
+    const canLookup = region?.ok === true && f.areaM2 !== null;
+    if (region?.ok) setRegionNote(`${region.match.name} (${region.match.code})로 시세 조회를 준비했습니다.`);
+    else if (f.address)
+      setRegionNote(
+        region?.reason === 'ambiguous'
+          ? '주소만으로 지역을 하나로 정할 수 없어 법정동코드를 직접 입력해야 합니다.'
+          : '이 주소의 법정동코드를 자동으로 찾지 못했습니다(2026년 행정구역 개편 지역 등). 시세 조회의 법정동코드를 직접 입력하세요.',
+      );
+    else setRegionNote('주소가 없어 법정동코드를 직접 입력해야 합니다.');
     setForm((prev) => ({
       ...prev,
       kind: f.kind ?? prev.kind,
       amountManwon: f.amountManwon !== null ? String(f.amountManwon) : prev.amountManwon,
-      lookupComplexName: f.complexName ?? prev.lookupComplexName,
+      lookupHousing: f.housingType ?? prev.lookupHousing,
+      lookupLawdCd: region?.ok ? region.match.code : prev.lookupLawdCd,
+      // 단독·다가구는 건물명이 없어 법정동명을 건물명 칸에 쓴다
+      lookupComplexName:
+        (f.housingType ?? prev.lookupHousing) === 'house'
+          ? (dong ?? prev.lookupComplexName)
+          : (f.complexName ?? prev.lookupComplexName),
+      lookupDongName: dong ?? prev.lookupDongName,
       lookupAreaM2: f.areaM2 !== null ? String(f.areaM2) : prev.lookupAreaM2,
+      // 조회에 필요한 값이 모이면 시세 조회를 자동으로 실행한다
+      lookupNonce: canLookup ? prev.lookupNonce + 1 : prev.lookupNonce,
     }));
     setApplied(true);
   };
@@ -140,7 +170,11 @@ export function ListingImport({ setForm }: Props) {
               {f.monthlyRentManwon ? ` / 월세 ${f.monthlyRentManwon.toLocaleString('ko-KR')}만원` : ''}
             </li>
             <li>단지명: {f.complexName ?? '확인 안 됨'}</li>
-            <li>주소: {f.address ?? '확인 안 됨'} (법정동코드 5자리는 아래 시세 조회에서 직접 입력)</li>
+            <li>
+              주택 유형:{' '}
+              {f.housingType ? HOUSING_LABEL[f.housingType] : '확인 안 됨 (시세 조회에서 직접 선택)'}
+            </li>
+            <li>주소: {f.address ?? '확인 안 됨'}</li>
             <li>전용면적: {f.areaM2 !== null ? `${f.areaM2}㎡` : '확인 안 됨'}</li>
             <li>층: {f.floor ?? '확인 안 됨'}</li>
             <li>준공연도: {f.builtYear ?? '확인 안 됨'}</li>
@@ -161,6 +195,7 @@ export function ListingImport({ setForm }: Props) {
           <button type="button" className="btn-primary" onClick={apply} disabled={applied}>
             {applied ? '입력칸에 적용됨' : '입력칸에 적용'}
           </button>
+          {regionNote && <p className="hint">{regionNote}</p>}
         </div>
       )}
     </fieldset>

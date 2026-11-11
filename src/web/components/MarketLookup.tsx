@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import type { FormState } from '../form';
 import { formatWon } from '../present';
@@ -34,6 +34,7 @@ export function MarketLookup({ form, setForm }: Props) {
   const lawdCd = form.lookupLawdCd;
   const areaM2 = form.lookupAreaM2;
   const complexName = form.lookupComplexName;
+  const dongName = form.lookupDongName;
   const [busy, setBusy] = useState(false);
   const [similar, setSimilar] = useState<NonNullable<LookupResponse['similar']>>([]);
   const [message, setMessage] = useState<{ tone: 'ok' | 'warn' | 'error'; text: string } | null>(null);
@@ -42,7 +43,7 @@ export function MarketLookup({ form, setForm }: Props) {
     setBusy(true);
     setMessage(null);
     try {
-      const qs = new URLSearchParams({ housing, lawdCd, areaM2, complexName });
+      const qs = new URLSearchParams({ housing, lawdCd, areaM2, complexName, dongName });
       const res = await fetch(`/api/market?${qs.toString()}`);
       const data = (await res.json()) as LookupResponse;
       setSimilar(res.ok ? (data.similar ?? []) : []);
@@ -78,7 +79,7 @@ export function MarketLookup({ form, setForm }: Props) {
             : housing !== 'apt'
               ? ' 빌라·오피스텔은 같은 건물의 거래가 적고 호실마다 가격 차이가 커서 신뢰도를 낮게 표시합니다. 참고용으로만 쓰세요.'
               : regionWide
-                ? ' 단지명 없이 지역 전체 거래로 계산해 부정확합니다. 단지명을 입력하면 정확해집니다.'
+                ? ' 단지명 없이 같은 지역(법정동명이 있으면 같은 동) 거래로 계산해 부정확합니다. 단지명을 입력하면 정확해집니다.'
                 : data.market.confidence === 'low'
                   ? ' 표본이 적어 신뢰도가 낮습니다.'
                   : ''
@@ -90,6 +91,11 @@ export function MarketLookup({ form, setForm }: Props) {
       setBusy(false);
     }
   };
+
+  // 매물 설명을 적용하면 필요한 값이 채워진 상태에서 시세 조회를 자동 실행한다
+  useEffect(() => {
+    if (form.lookupNonce > 0) void lookup();
+  }, [form.lookupNonce]);
 
   return (
     <fieldset>
@@ -139,6 +145,17 @@ export function MarketLookup({ form, setForm }: Props) {
           onChange={(e) => setForm((f) => ({ ...f, lookupComplexName: e.target.value }))}
         />
       </label>
+      {housing !== 'house' && (
+        <label className="field">
+          <span>법정동명 (선택, 단지명이 없을 때 같은 동 거래만 사용)</span>
+          <input
+            autoComplete="off"
+            placeholder="예: 신길동"
+            value={dongName}
+            onChange={(e) => setForm((f) => ({ ...f, lookupDongName: e.target.value }))}
+          />
+        </label>
+      )}
       <button type="button" className="btn-secondary" onClick={lookup} disabled={busy}>
         {busy ? '조회 중…' : '실거래가로 시세 조회'}
       </button>

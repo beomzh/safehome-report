@@ -5,6 +5,8 @@ export interface MarketQuery {
   lawdCd: string;
   areaM2: number;
   complexName?: string;
+  /** 법정동명 (단지명이 없을 때 같은 동 거래만 사용) */
+  dongName?: string;
 }
 
 /** /api/market 쿼리 검증. 법정동코드는 5자리 숫자, 면적은 0 초과 숫자 */
@@ -22,8 +24,15 @@ export function parseMarketQuery(
   if (housing !== 'apt' && housing !== 'rowhouse' && housing !== 'officetel' && housing !== 'house')
     return { ok: false, error: '주택 유형은 apt, rowhouse, officetel, house 중 하나여야 합니다.' };
   const complexName = (params.get('complexName') ?? '').trim();
+  const dongName = (params.get('dongName') ?? '').trim().slice(0, 20);
   return {
     ok: true,
-    query: { housing, lawdCd, areaM2: Number(area), complexName: complexName || undefined },
+    query: {
+      housing,
+      lawdCd,
+      areaM2: Number(area),
+      complexName: complexName || undefined,
+      dongName: dongName || undefined,
+    },
   };
 }

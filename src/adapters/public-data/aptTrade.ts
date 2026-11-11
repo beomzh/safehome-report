@@ -83,6 +83,7 @@ export function parseTradeXml(xml: string, nameTag: string, areaTag = 'excluUseA
       areaM2: Number(tag(item, areaTag)),
       dealDate: `${year}-${month}-${day}`,
       complexName: decodeEntities((tag(item, nameTag) ?? '').trim()) || undefined,
+      dongName: decodeEntities((tag(item, 'umdNm') ?? '').trim()) || undefined,
       cancelled: (tag(item, 'cdealType') ?? '').trim() !== '',
     };
     const parsed = tradeRecordSchema.safeParse(candidate);
