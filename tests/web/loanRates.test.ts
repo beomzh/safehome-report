@@ -36,10 +36,35 @@ describe('금리 데이터 파일', () => {
     for (const p of LOAN_RATES.products) expect(p.source.checkedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  it('확인하지 못한 칸별 표는 notCovered 로 밝혀 둔다 (일반 버팀목·신혼·디딤돌)', () => {
+  it('일반 버팀목·신혼·디딤돌은 공식 사이트에서 읽은 칸별 금리표를 갖고, 범위와 일치한다', () => {
     for (const id of ['buteommok', 'newlywed-jeonse', 'didimdol']) {
-      expect(rateInfoFor(id)?.notCovered.join(' ')).toContain('칸 금리표');
+      const info = rateInfoFor(id)!;
+      expect(info.grid).toBeDefined();
+      const all = info.grid!.rows.flatMap((r) => r.percents);
+      expect(Math.min(...all)).toBe(info.range!.minPercent);
+      expect(Math.max(...all)).toBe(info.range!.maxPercent);
+      expect(info.notCovered.some((n) => n.includes('칸 금리표'))).toBe(false);
     }
+  });
+
+  it('칸별 금리표는 소득이 높을수록(행), 보증금이 클수록(열) 금리가 낮아지지 않는다', () => {
+    for (const id of ['buteommok', 'newlywed-jeonse']) {
+      const rows = rateInfoFor(id)!.grid!.rows;
+      for (const r of rows)
+        for (let i = 1; i < r.percents.length; i++)
+          expect(r.percents[i]).toBeGreaterThanOrEqual(r.percents[i - 1]!);
+      for (let i = 1; i < rows.length; i++)
+        expect(rows[i]!.percents[0]).toBeGreaterThanOrEqual(rows[i - 1]!.percents[0]!);
+    }
+  });
+
+  it('열 수와 금리 수가 다른 표는 거부한다', () => {
+    const bad = {
+      ...base,
+      range: undefined,
+      grid: { basis: 'b', cols: ['a', 'b'], rows: [{ label: 'x', percents: [2] }] },
+    };
+    expect(loanRateInfoSchema.safeParse(bad).success).toBe(false);
   });
 
   it('은행 상품은 실제 대출금리를 확인하지 못했다고 밝힌다 (기준금리만 제공)', () => {

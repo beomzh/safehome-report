@@ -36,6 +36,17 @@ export const loanRateInfoSchema = z
     table: z
       .object({ basis: z.string(), rows: z.array(z.object({ label: z.string(), percent })).min(1) })
       .optional(),
+    grid: z
+      .object({
+        basis: z.string(),
+        cols: z.array(z.string()).min(1),
+        rows: z.array(z.object({ label: z.string(), percents: z.array(percent).min(1) })).min(1),
+      })
+      .refine(
+        (g) => g.rows.every((r) => r.percents.length === g.cols.length),
+        '열 수와 금리 수가 같아야 한다',
+      )
+      .optional(),
     termTable: z
       .object({
         publishedAt: isoDate,
@@ -54,7 +65,10 @@ export const loanRateInfoSchema = z
     notCovered: z.array(z.string()),
     source: sourceSchema,
   })
-  .refine((p) => p.range || p.table || p.termTable || p.benchmarks, '금리 정보가 하나는 있어야 한다');
+  .refine(
+    (p) => p.range || p.table || p.grid || p.termTable || p.benchmarks,
+    '금리 정보가 하나는 있어야 한다',
+  );
 
 export const loanRatesSchema = z.object({ checkedAt: isoDate, products: z.array(loanRateInfoSchema) });
 export type LoanRateInfo = z.infer<typeof loanRateInfoSchema>;
