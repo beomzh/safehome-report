@@ -51,7 +51,7 @@
 - [x] 공공데이터 API 정리 문서 ([public-data-api.md](public-data-api.md)) — 확인된 사실과 미확인 항목 구분
 - [x] 실제 응답으로 필드 검증, 아파트 매매 응답 → `TradeRecord` 정규화 어댑터, 재시도·페이지네이션·메모리 캐시, `/api/market` 서버 라우트, 시세 조회 UI
 - [x] 전월세 API 4종 연결(2026-11-12, [public-data-api.md](public-data-api.md)): 전세·월세 시세, 전세가율 참고, 입력 보증금 비교(참고용, 판정 미사용)
-- [ ] 건축물대장, 공시가격
+- [ ] 건축물대장: API 4종 호출 확인(2026-11-12), 위반건축물 필드는 응답에서 찾지 못함. 구현에는 법정동코드 10자리 표와 지번 입력이 필요([public-data-api.md](public-data-api.md)). 공시가격은 대기
 - [x] 주소 → 시군구 법정동코드 변환(검증된 201곳, 2026 개편 지역은 직접 입력)
 - [ ] 2026 개편 지역(인천·광주·전남·부천·화성 등) 새 법정동코드 반영, SQLite 영구 캐시
 
@@ -76,7 +76,8 @@
 - [x] Dockerfile(non-root, 멀티 스테이지), compose(127.0.0.1 바인딩·읽기 전용 파일시스템·헬스체크)
 - [x] 운영 로그: 구조화 JSON 로그(요청 번호·소요 시간·건수·결과, 개인정보·키 미포함), 로그 회전, `LOG_LEVEL`
 - [x] CI에 `npm run build`와 Docker 이미지 빌드·기동·non-root 스모크 테스트 추가
-- [ ] compose 프로파일(LLM 등), `.env` 가이드, 데이터 흐름 문서, 멀티 아키텍처 이미지
+- [x] `.env` 가이드([operations.md](operations.md)), 데이터 흐름 문서([data-flow.md](data-flow.md))
+- [ ] compose 프로파일(LLM 등), 멀티 아키텍처 이미지
 - [ ] Docker 로컬 빌드·실행 검증, trivy, 설치 10분 검증 (의존성 감사 2026-11-12: 운영 의존성 취약점 0건, 개발 도구(eslint 계열) minimatch 중간 등급 1건 — 수정이 eslint 메이저 변경이라 보류. 저장소 시크릿·하드코딩 경로 검색 0건)
 
 ## M7 — MCP (P2)

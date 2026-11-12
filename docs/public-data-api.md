@@ -77,6 +77,15 @@
 
 설계할 때 정해야 할 점: 갱신 계약(`contractType=갱신`)은 신규보다 낮게 형성되는 경향이 있어 신규만 쓸지, 표본이 적은 단지의 신뢰도 기준, 전월세 API 호출량(월 단위 호출 × 12개월 × 유형)이 일일 한도 10,000건에 미치는 영향(캐시 필요).
 
+## 건축물대장 (건축HUB, 2026-11-12 실제 호출)
+
+- 현재 키로 `BldRgstHubService` 의 표제부(`getBrTitleInfo`)·총괄표제부(`getBrRecapTitleInfo`)·기본개요(`getBrBasisOulnInfo`)·층별개요(`getBrFlrOulnInfo`)가 호출된다(`_type=json`, `resultCode 00`). 전용부(`getBrExposPubuseAreaInfo`)는 JSON 응답이 아니라 확인하지 못했다.
+- 요청 변수: `sigunguCd`(5자리) + `bjdongCd`(**법정동코드 뒤 5자리**) + `platGbCd`(0 대지) + `bun`(본번 4자리) + `ji`(부번 4자리). 예: 서울 강남구 개포동 12 → `11680`, `10300`, `0`, `0012`, `0000`.
+- 표제부 필드(일부): `bldNm`, `dongNm`, `mainPurpsCdNm`(주용도, 예 공동주택), `etcPurps`(기타용도, 예 아파트), `hhldCnt`, `grndFlrCnt`, `ugrndFlrCnt`, `totArea`, `useAprDay`(사용승인일). 층별개요에는 층마다 `mainPurpsCdNm`·`etcPurps`·`area` 가 있다.
+- **위반건축물 여부 필드는 위 네 API 응답에서 찾지 못했다.** 위반건축물 표시(R-BLD-01)는 이 API 로 판정할 수 없고 건축물대장 열람 화면에서 확인해야 한다.
+- 주용도·층별 용도로 근린생활시설을 주거로 쓰는 건물(R-BLD-02 후보)은 판단할 수 있다.
+- 구현하려면 **법정동코드 10자리 표**가 필요하다. 지금 앱은 시군구 5자리 표(201곳)만 있어 읍·면·동 뒤 5자리와 지번(번지)을 알 수 없다. 전체 법정동코드 자료를 검증해 들이거나 사용자가 직접 입력하게 해야 한다. 아직 구현하지 않았다.
+
 ## 확인하지 못한 것
 
 - `numOfRows` 허용 최대값(자료마다 1000/9999로 설명이 엇갈림).
