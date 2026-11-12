@@ -77,6 +77,10 @@ describe('resolveBjdong / parseJibun', () => {
       name: '개포동',
     });
   });
+  it('2026 개편으로 새로 생긴 구도 찾는다 (서해구 가정동, 동탄구 반송동)', () => {
+    expect(resolveBjdong('28275', '인천광역시 서해구 가정동')).toMatchObject({ ok: true, name: '가정동' });
+    expect(resolveBjdong('41597', '경기도 화성시 동탄구 반송동')).toMatchObject({ ok: true, name: '반송동' });
+  });
   it('없는 동·없는 시군구는 not_found', () => {
     expect(resolveBjdong('11680', '서울 강남구 없는동')).toEqual({ ok: false, reason: 'not_found' });
     expect(resolveBjdong('99999', '개포동')).toEqual({ ok: false, reason: 'not_found' });
