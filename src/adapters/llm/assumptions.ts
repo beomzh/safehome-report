@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { containsClaim } from './guard';
 import type { LlmProvider } from './provider';
 
 /**
@@ -95,19 +96,29 @@ export function sanitizeAssumptions(raw: RawAssumptions): AssumptionSuggestion {
     dropped.push(`${label} 제안값(${v})이 올바른 범위를 벗어나 사용하지 않았습니다.`);
     return null;
   };
+  let claims = 0;
   const clean = (list: string[], limit: number) =>
     list
       .map((s) => s.trim().slice(0, 200))
       .filter(Boolean)
+      .filter((s) => {
+        // 안전·승인을 단정하는 문장은 버린다
+        if (!containsClaim(s)) return true;
+        claims += 1;
+        return false;
+      })
       .slice(0, limit);
+  const rationale = clean(raw.rationale, 8);
+  const caveatList = clean(raw.caveats, 8);
+  if (claims > 0) dropped.push(`안전·승인을 단정하는 문장 ${claims}개를 제외했습니다.`);
   return {
     ltvLimitPercent: num('LTV 한도', raw.ltvLimitPercent, 1, 100),
     dsrLimitPercent: num('DSR 한도', raw.dsrLimitPercent, 1, 100),
     annualRatePercent: num('금리', raw.annualRatePercent, 0, 30),
     stressAddPercent: num('스트레스 가산 금리', raw.stressAddPercent, 0, 10),
     termYears: num('대출 기간', raw.termYears, 1, 50, true),
-    rationale: clean(raw.rationale, 8),
-    caveats: [...clean(raw.caveats, 8), ...dropped],
+    rationale,
+    caveats: [...caveatList, ...dropped],
     confidence: raw.confidence,
   };
 }

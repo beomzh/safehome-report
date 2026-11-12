@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { containsClaim } from './guard';
 import type { LlmProvider } from './provider';
 
 /**
@@ -49,6 +50,8 @@ export interface VerdictExplanation {
   disagreement: string | null;
   /** 입력에 없는 숫자가 들어 있어 버린 문장 수 */
   droppedForNumbers: number;
+  /** 안전 보증·승인 단정 표현이 들어 있어 버린 문장 수 */
+  droppedForClaims: number;
 }
 
 export const SYSTEM_PROMPT = [
@@ -57,7 +60,7 @@ export const SYSTEM_PROMPT = [
   '숫자는 <criteria> 에 적힌 것만 인용한다. 새로 계산하거나 추정한 숫자, 금액, 규제 수치(LTV·DSR 한도 등)를 만들지 않는다. 모르면 숫자 없이 말한다.',
   '결론을 직접 바꾸지 않는다. 기준표 결론이 지나치게 관대하거나 엄격하다고 판단되면 disagreement 에 어느 기준(C1~C6) 때문인지 이유와 함께 적고, 아니면 null 로 둔다.',
   'perCriterion 에는 기준 id 별로 한두 문장 해석을, conditions 에는 방문 전에 확인해야 할 조건(결론이 go 면 빈 목록 가능)을, nextActions 에는 구체적인 다음 행동을 적는다.',
-  '안전을 보증하지 않는다. 대출 승인 여부를 단정하지 않는다. 한국어로 짧게 쓴다.',
+  '안전을 보증하지 않는다("안전합니다", "문제없습니다" 같은 표현 금지). 대출 승인 여부를 단정하지 않는다. 한국어로 짧게 쓴다.',
 ].join('\n');
 
 const VERDICT_TEXT = { go: '보러 가도 됨', conditional: '조건부', avoid: '보러 가지 않음 권장' } as const;
@@ -87,9 +90,14 @@ const MONEY_WORDS = /억|만\s*원|천\s*만|\d\s*원/;
 export function sanitizeVerdict(raw: RawVerdict, input: string): VerdictExplanation {
   const allowed = new Set(numbersIn(input));
   let dropped = 0;
+  let claims = 0;
   const ok = (s: string): string | null => {
     const t = s.trim().slice(0, 300);
     if (!t) return null;
+    if (containsClaim(t)) {
+      claims += 1;
+      return null;
+    }
     if (MONEY_WORDS.test(t) || numbersIn(t).some((n) => !allowed.has(n))) {
       dropped += 1;
       return null;
@@ -113,6 +121,7 @@ export function sanitizeVerdict(raw: RawVerdict, input: string): VerdictExplanat
     nextActions: list(raw.nextActions, 6),
     disagreement: raw.disagreement ? ok(raw.disagreement) : null,
     droppedForNumbers: dropped,
+    droppedForClaims: claims,
   };
 }
 
