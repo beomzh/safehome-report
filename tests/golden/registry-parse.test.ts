@@ -82,3 +82,43 @@ describe('parseRegistryText (합성 문서)', () => {
     expect(f.parseConfidence).toBe(1);
   });
 });
+
+describe('parseRegistryText (실제 열람본의 레이아웃 특성을 따른 합성 문서)', () => {
+  // 실제 열람본(PDF 텍스트, 레이아웃 유지)에서 확인한 형식: 말소 행의 목적란이 줄바꿈되어 '말소'가 접수일 뒤에 오고,
+  // 공동담보·주소의 "12-34 …" 줄이 순위번호처럼 보이며, 명의인표시변경 부기등기와 전세권 근저당이 섞여 있다.
+  const r = parseRegistryText(fixture('synthetic-layout.txt'));
+  const f = r.facts!;
+
+  it('줄바꿈된 말소 행도 인식해 말소된 근저당을 제외한다', () => {
+    const m = f.eul.filter((e) => e.type === 'mortgage');
+    expect(m.map((e) => [e.rank, e.maxClaimAmount, e.cancelled])).toEqual([
+      ['1', 240_000_000, true],
+      ['3', 360_000_000, false],
+    ]);
+  });
+
+  it('주소·공동담보의 "12-34" 줄을 순위로 오인하지 않는다', () => {
+    expect(f.eul.map((e) => e.rank)).toEqual(['1', '3', '4', '4-1']);
+    expect(f.gap.map((e) => e.rank)).toEqual(['1', '2', '3']);
+  });
+
+  it('명의인표시변경은 소유권 변동이 아니라 경고 없이 무시하고, 현재 소유자는 마지막 이전의 권리자', () => {
+    expect(f.owners).toEqual([{ name: '이샘플' }]);
+    expect(f.gap.filter((e) => e.type === 'ownership_transfer')).toHaveLength(2);
+    expect(r.warnings).toEqual([]);
+    expect(f.parseConfidence).toBe(1);
+  });
+
+  it('전세권 위의 근저당(4-1)은 건물의 선순위 채권으로 합산하지 않는다', () => {
+    const e = f.eul.find((x) => x.rank === '4-1')!;
+    expect(e.type).toBe('other');
+    const sum = f.eul
+      .filter((x) => x.type === 'mortgage' && !x.cancelled)
+      .reduce((a, x) => a + (x.maxClaimAmount ?? 0), 0);
+    expect(sum).toBe(360_000_000);
+    expect(f.eul.find((x) => x.rank === '4')).toMatchObject({
+      type: 'lease_right',
+      maxClaimAmount: 100_000_000,
+    });
+  });
+});

@@ -7,7 +7,8 @@ import type { EulEntry, GapEntry, GapEntryType, RegistryFacts } from '../types';
  * - 순수 함수. 네트워크·LLM·로그 없음. 주민등록번호 등 원문은 결과에 담지 않는다 (성명만 추출).
  * - 확실하지 않은 것은 채우지 않고 `warnings` 에 남기며 `parseConfidence` 를 낮춘다.
  * - 말소는 "N번…말소" 행이 있을 때만 인정한다. 취소선만 있는 행은 텍스트로 구분할 수 없으므로 미말소로 본다.
- * - 합성 문서로만 검증했다. 실제 문서의 줄바꿈 순서가 다를 수 있어 사용자 확인 단계를 전제로 한다.
+ * - 합성 문서와, 인터넷에 공개된 실제 열람본 2건(집합건물·건물, 로컬에서만 확인·저장소에는 미포함)의 형식으로 검증했다.
+ *   실제 문서의 줄바꿈 순서가 다를 수 있어 사용자 확인 단계를 전제로 한다.
  */
 
 export interface RegistryParseResult {
@@ -28,7 +29,9 @@ interface Row {
 }
 
 const DATE_RE = /(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일/;
-const ROW_START = /^\s*(\d+(?:-\d+)?)\s+((?:[가-힣]|\d+(?:-\d+)?\s*번).*)$/;
+const ROW_START = /^\s*(\d{1,3}(?:-\d{1,2})?)\s+((?:[가-힣]|\d+(?:-\d+)?\s*번).*)$/;
+/** 레이아웃을 유지한 텍스트에서 순위번호는 왼쪽 열에 있다. 이만큼 깊게 들여쓴 줄은 앞 행의 이어지는 내용(주소 등)이다 */
+const MAX_RANK_INDENT = 12;
 
 const norm = (s: string): string => s.replace(/\s+/g, ' ').trim();
 const compact = (s: string): string => s.replace(/\s+/g, '');
@@ -55,10 +58,11 @@ function rowsOf(lines: string[]): Row[] {
   for (const line of lines) {
     const t = line.trim();
     if (!t) continue;
+    const indent = line.length - line.trimStart().length;
     if (/^[-─=\s]*이\s*하\s*여\s*백/.test(t) || /^--\s*이하/.test(t)) break;
     // 표 머리글
     if (/^순위\s*번호/.test(t) || (/등\s*기\s*목\s*적/.test(t) && /접\s*수/.test(t))) continue;
-    const m = ROW_START.exec(t);
+    const m = indent <= MAX_RANK_INDENT ? ROW_START.exec(t) : null;
     if (m) rows.push({ rank: m[1]!, parts: [m[2]!] });
     else if (rows.length > 0) rows[rows.length - 1]!.parts.push(t);
   }
@@ -70,10 +74,22 @@ function rowsOf(lines: string[]): Row[] {
   });
 }
 
-/** "1번근저당권설정, 2번근저당권설정등기말소" 처럼 말소되는 순위를 뽑는다 */
-function cancelledRanks(purpose: string): string[] {
-  if (!compact(purpose).includes('말소') || compact(purpose).includes('일부말소')) return [];
+/**
+ * "1번근저당권설정, 2번근저당권설정등기말소" 처럼 말소되는 순위를 뽑는다.
+ * 실제 열람본은 "3번근저당권설정등 / 기말소" 처럼 목적란이 줄바꿈되어 '말소'가 접수일 뒤에 나올 수 있어,
+ * 목적이 "N번…"으로 시작하는 행은 행 전체에서 '말소'를 찾는다.
+ */
+function cancelledRanks(row: Pick<Row, 'purpose' | 'text'>): string[] {
+  const { purpose, text } = row;
+  const starts = /^\s*\d+(?:-\d+)?\s*번/.test(purpose);
+  const hasCancel = compact(purpose).includes('말소') || (starts && compact(text).includes('말소'));
+  if (!hasCancel || compact(purpose).includes('일부말소') || compact(text).includes('일부말소')) return [];
   return [...purpose.matchAll(/(\d+(?:-\d+)?)\s*번/g)].map((m) => m[1]!);
+}
+
+/** 이 행이 말소(해지) 행인가 — 목적란이 줄바꿈되어도 인식한다 */
+function isCancelRow(row: Pick<Row, 'purpose' | 'text'>): boolean {
+  return cancelledRanks(row).length > 0 || compact(row.purpose).includes('말소');
 }
 
 function ownerNames(text: string): string[] {
@@ -90,6 +106,8 @@ function ownerNames(text: string): string[] {
 function gapType(purpose: string, text: string): GapEntryType | 'owner_origin' | 'ignore' {
   const p = compact(purpose);
   if (p.includes('말소')) return 'ignore';
+  // 등기명의인의 성명·주소만 바뀐 부기등기 (소유권 변동 아님)
+  if (/명의인표시/.test(p)) return 'ignore';
   if (p.includes('소유권보존')) return 'owner_origin';
   if (p.includes('가등기')) return 'other';
   if (p.includes('신탁') || (p.includes('소유권이전') && /신탁원부|수탁자/.test(text))) return 'trust';
@@ -133,11 +151,11 @@ export function parseRegistryText(raw: string): RegistryParseResult {
   const gap: GapEntry[] = [];
   const ownerRows: { rank: string; names: string[] }[] = [];
   const cancelled = new Set<string>();
-  for (const r of gapRows) for (const c of cancelledRanks(r.purpose)) cancelled.add(c);
+  for (const r of gapRows) for (const c of cancelledRanks(r)) cancelled.add(c);
 
   let unrecognized = 0;
   for (const r of gapRows) {
-    const t = gapType(r.purpose, r.text);
+    const t = isCancelRow(r) ? 'ignore' : gapType(r.purpose, r.text);
     if (t === 'ignore') continue;
     const isCancelled = cancelled.has(r.rank);
     const registeredAt = isoDate(r.text);
@@ -183,10 +201,10 @@ export function parseRegistryText(raw: string): RegistryParseResult {
   if (eulAt >= 0) {
     const eulRows = rowsOf(eulLines);
     const eulCancelled = new Set<string>();
-    for (const r of eulRows) for (const c of cancelledRanks(r.purpose)) eulCancelled.add(c);
+    for (const r of eulRows) for (const c of cancelledRanks(r)) eulCancelled.add(c);
     for (const r of eulRows) {
       const p = compact(r.purpose);
-      if (p.includes('말소')) continue;
+      if (isCancelRow(r)) continue;
       const isCancelled = eulCancelled.has(r.rank);
       const registeredAt = isoDate(r.text);
       if (p.includes('근저당권설정')) {
@@ -205,6 +223,9 @@ export function parseRegistryText(raw: string): RegistryParseResult {
             cancelled: isCancelled,
           });
         }
+      } else if (/전세권.*근저당|임차권.*근저당/.test(p)) {
+        // 전세권·임차권을 담보로 잡은 근저당은 임차인의 권리에 대한 담보라 건물의 선순위 채권이 아니다
+        eul.push({ rank: r.rank, type: 'other', registeredAt, cancelled: isCancelled });
       } else if (p.includes('전세권') || p.includes('임차권')) {
         const am = /(?:전세금|임차보증금)\s*금?\s*([\d,]+)\s*원/.exec(r.text);
         eul.push({
