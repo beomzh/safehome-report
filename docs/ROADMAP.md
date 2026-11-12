@@ -76,7 +76,7 @@
 - [x] 운영 로그: 구조화 JSON 로그(요청 번호·소요 시간·건수·결과, 개인정보·키 미포함), 로그 회전, `LOG_LEVEL`
 - [x] CI에 `npm run build`와 Docker 이미지 빌드·기동·non-root 스모크 테스트 추가
 - [ ] compose 프로파일(LLM 등), `.env` 가이드, 데이터 흐름 문서, 멀티 아키텍처 이미지
-- [ ] Docker 로컬 빌드·실행 검증, trivy·의존성 감사·secret-scan, 설치 10분 검증
+- [ ] Docker 로컬 빌드·실행 검증, trivy, 설치 10분 검증 (의존성 감사 2026-11-12: 운영 의존성 취약점 0건, 개발 도구(eslint 계열) minimatch 중간 등급 1건 — 수정이 eslint 메이저 변경이라 보류. 저장소 시크릿·하드코딩 경로 검색 0건)
 
 ## M7 — MCP (P2)
 
