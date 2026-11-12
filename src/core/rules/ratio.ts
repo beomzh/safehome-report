@@ -14,7 +14,7 @@ const won = (n: number) => `${n.toLocaleString('ko-KR')}원`;
 export const depositToMarketRatio: Rule = ({ input, config }) => {
   const id = 'R-RATIO-01';
   const title = '보증금 대비 시세 비율 (사전 점검, 등기부 없이)';
-  const { contract, market, registry } = input;
+  const { contract, market, registry, statedPriorLoan } = input;
   const base = { ruleId: id, ruleVersion: RULE_VERSION, title };
 
   if (contract.kind === 'sale' || registry) {
@@ -29,11 +29,18 @@ export const depositToMarketRatio: Rule = ({ input, config }) => {
   }
   if (!market) return unknownResult(id, title, '시세 정보 없음 (실거래가 조회 또는 시세 입력 필요)');
 
-  const ratio = percent(contract.amount, market.estimatedValue);
-  const evidence = [
-    `보증금 ${won(contract.amount)} / 시세 ${won(market.estimatedValue)} = ${ratio}%`,
-    '선순위 근저당을 알 수 없어 보증금만으로 계산한 하한값입니다. 등기부를 확인하면 실제 비율은 더 높을 수 있습니다.',
-  ];
+  const stated = statedPriorLoan !== undefined && statedPriorLoan > 0 ? statedPriorLoan : 0;
+  const ratio = percent(contract.amount + stated, market.estimatedValue);
+  const evidence =
+    stated > 0
+      ? [
+          `(매물 설명의 융자금 ${won(stated)} + 보증금 ${won(contract.amount)}) / 시세 ${won(market.estimatedValue)} = ${ratio}%`,
+          '융자금은 매물 설명에 적힌 값으로 등기부로 확인되지 않았습니다. 근저당 채권최고액은 보통 융자금보다 크고 설명에 없는 선순위가 있을 수 있어 하한값입니다. 등기부를 확인하면 실제 비율은 더 높을 수 있습니다.',
+        ]
+      : [
+          `보증금 ${won(contract.amount)} / 시세 ${won(market.estimatedValue)} = ${ratio}%`,
+          '선순위 근저당을 알 수 없어 보증금만으로 계산한 하한값입니다. 등기부를 확인하면 실제 비율은 더 높을 수 있습니다.',
+        ];
   if (market.confidence === 'low') evidence.push('시세 신뢰도가 낮아 실제 비율과 차이가 클 수 있음');
   const withData = { ...base, evidence, data: { ratioPercent: ratio } };
   const { cautionAbovePercent, dangerAbovePercent } = config.ltv;

@@ -37,6 +37,30 @@ describe('R-RATIO-01 사전 점검 (등기부 없이)', () => {
     expect(ratio(lite(900_000_000)).evidence.join(' ')).toContain('하한값');
   });
 
+  it('매물 설명의 융자금을 더해 하한값을 계산하고 미확인임을 밝힌다', () => {
+    // 보증금 6.5억(65%)은 clear 이지만 융자금 2억을 더하면 85% → red
+    const r = ratio(lite(650_000_000, { statedPriorLoan: 200_000_000 }));
+    expect([r.status, r.severity]).toEqual(['triggered', 'red']);
+    expect(r.data?.ratioPercent).toBe(85);
+    expect(r.evidence.join(' ')).toContain('등기부로 확인되지 않았');
+  });
+
+  it('융자금이 0 이거나 없으면 결과가 달라지지 않는다', () => {
+    expect(ratio(lite(650_000_000, { statedPriorLoan: 0 })).status).toBe('clear');
+  });
+
+  it('등기부가 있으면 융자금은 무시한다 (R-LTV-01 이 판정)', () => {
+    const withReg = evaluateRisk(
+      {
+        ...input({ registry: registry() }),
+        market: { estimatedValue: 1_000_000_000, source: 'trade_median', confidence: 'high' },
+        statedPriorLoan: 900_000_000,
+      },
+      config,
+    );
+    expect(ratio(withReg).status).toBe('not_applicable');
+  });
+
   it('시세가 없으면 판단 보류', () => {
     expect(ratio(lite(500_000_000, { market: undefined })).status).toBe('unknown');
   });

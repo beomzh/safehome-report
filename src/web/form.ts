@@ -33,6 +33,8 @@ export interface FormState {
   marketSource: MarketSource;
   marketConfidence: 'high' | 'low';
   includeRegistry: boolean;
+  /** 매물 설명에 적힌 융자금 (만원, 선택·미확인) — 등기부 없는 사전 점검에만 쓴다 */
+  statedLoanManwon: string;
   /** 실거래가 조회용 입력 (매물 텍스트 추출 결과가 채운다) */
   lookupHousing: 'apt' | 'rowhouse' | 'officetel' | 'house';
   /** 매물 주소 또는 지역 (입력하면 법정동코드·법정동명을 자동으로 찾는다) */
@@ -60,6 +62,7 @@ export const emptyForm = (): FormState => ({
   marketSource: 'user',
   marketConfidence: 'high',
   includeRegistry: false,
+  statedLoanManwon: '',
   lookupHousing: 'apt',
   lookupAddress: '',
   lookupLawdCd: '',
@@ -185,6 +188,13 @@ export function buildRiskInput(form: FormState, asOf: string): BuildResult {
     if (owners.length > 0) registry = { owners, gap, eul, parseConfidence: 1 };
   }
 
+  let statedPriorLoan: number | undefined;
+  if (form.statedLoanManwon.trim() && form.kind !== 'sale') {
+    const l = parseManwon(form.statedLoanManwon);
+    if (!l.ok) errors.push('융자금은 만원 단위 정수로 입력하세요. (없으면 비움)');
+    else statedPriorLoan = l.won;
+  }
+
   if (errors.length > 0 || !amount.ok) return { ok: false, errors };
 
   return {
@@ -200,6 +210,7 @@ export function buildRiskInput(form: FormState, asOf: string): BuildResult {
       },
       registry,
       market,
+      statedPriorLoan,
     },
   };
 }

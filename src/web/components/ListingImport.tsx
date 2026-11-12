@@ -150,6 +150,10 @@ export function ListingImport({ setForm, setFin }: Props) {
       kind: f.kind ?? prev.kind,
       amountManwon: f.amountManwon !== null ? String(f.amountManwon) : prev.amountManwon,
       lookupHousing: f.housingType ?? prev.lookupHousing,
+      statedLoanManwon:
+        f.priorLoanManwon !== null && (f.kind ?? prev.kind) !== 'sale'
+          ? String(f.priorLoanManwon)
+          : prev.statedLoanManwon,
       lookupAddress: f.address ?? prev.lookupAddress,
       lookupLawdCd: region?.ok ? region.match.code : prev.lookupLawdCd,
       // 단독·다가구는 건물명이 없어 법정동명을 건물명 칸에 쓴다
@@ -255,6 +259,9 @@ export function ListingImport({ setForm, setFin }: Props) {
               {f.amountManwon !== null ? `${f.amountManwon.toLocaleString('ko-KR')}만원` : '확인 안 됨'}
               {f.monthlyRentManwon ? ` / 월세 ${f.monthlyRentManwon.toLocaleString('ko-KR')}만원` : ''}
             </li>
+            {f.priorLoanManwon !== null && (
+              <li>융자금(설명에 적힌 값, 미확인): {f.priorLoanManwon.toLocaleString('ko-KR')}만원</li>
+            )}
             <li>단지명: {f.complexName ?? '확인 안 됨'}</li>
             <li>
               주택 유형:{' '}

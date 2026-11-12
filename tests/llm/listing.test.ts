@@ -14,6 +14,7 @@ const raw = (over: Partial<RawListing> = {}): RawListing => ({
   kind: 'jeonse',
   amountManwon: 35000,
   monthlyRentManwon: null,
+  priorLoanManwon: null,
   complexName: '가나다 아파트',
   address: null,
   areaM2: 84.99,
@@ -132,6 +133,20 @@ describe('면적·유형 추출 (평수 환산)', () => {
   it('프롬프트는 공급/전용 구분과 평수 처리를 지시한다', () => {
     expect(SYSTEM_PROMPT).toContain('공급/전용');
     expect(SYSTEM_PROMPT).toContain('areaPyeong');
+  });
+});
+
+describe('융자금 추출', () => {
+  it('금액이 명시된 융자금만 통과시키고 범위를 벗어나면 버린다', () => {
+    expect(sanitizeListing(raw({ priorLoanManwon: 20000 })).priorLoanManwon).toBe(20000);
+    expect(sanitizeListing(raw({ priorLoanManwon: null })).priorLoanManwon).toBeNull();
+    const bad = sanitizeListing(raw({ priorLoanManwon: -1 }));
+    expect(bad.priorLoanManwon).toBeNull();
+    expect(bad.warnings.join(' ')).toContain('융자금');
+  });
+  it('프롬프트는 채권최고액을 융자금으로 바꾸지 말라고 지시한다', () => {
+    expect(SYSTEM_PROMPT).toContain('priorLoanManwon');
+    expect(SYSTEM_PROMPT).toContain('채권최고액을 융자금으로');
   });
 });
 

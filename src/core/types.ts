@@ -81,6 +81,11 @@ export const riskInputSchema = z.object({
   contract: contractSchema,
   registry: registrySchema.optional(),
   market: marketSchema.optional(),
+  /**
+   * 매물 설명에 적힌 융자금(원). 등기부로 확인되지 않은 광고 문구라 사전 점검(R-RATIO-01)의
+   * 하한값 계산에만 쓰고, 등기부 정보가 있으면 무시한다. 채권최고액으로 환산하지 않는다.
+   */
+  statedPriorLoan: wonSchema.optional(),
 });
 export type RiskInput = z.infer<typeof riskInputSchema>;
 
