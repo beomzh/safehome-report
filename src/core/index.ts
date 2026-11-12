@@ -2,6 +2,8 @@ export { evaluateRisk, computeGrade, RULES } from './engine';
 export { rulesConfigSchema } from './config';
 export type { RulesConfig } from './config';
 export * from './types';
+export { classifyPurpose } from './rules/building';
+export type { UseClass } from './rules/building';
 export * from './finance';
 export * from './market';
 export { parseRegistryText } from './registry/parse';

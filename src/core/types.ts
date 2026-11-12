@@ -75,6 +75,17 @@ export const marketSchema = z.object({
 });
 export type MarketInfo = z.infer<typeof marketSchema>;
 
+/** 건축물대장 표제부 한 건 (어댑터가 정규화). 용도 판단에 쓰는 값만 담는다 */
+export const buildingEntrySchema = z.object({
+  /** 건물명 또는 동 이름 (표시용) */
+  label: z.string(),
+  /** 주용도 (예: 공동주택, 근린생활시설) */
+  mainPurpose: z.string(),
+  /** 기타용도 (예: 아파트, 소매점) */
+  etcPurpose: z.string().optional(),
+});
+export type BuildingEntry = z.infer<typeof buildingEntrySchema>;
+
 export const riskInputSchema = z.object({
   /** 판정 기준일. 결정성을 위해 호출자가 주입한다 (내부에서 현재 시각을 읽지 않는다) */
   asOf: isoDateSchema,
@@ -86,6 +97,8 @@ export const riskInputSchema = z.object({
    * 하한값 계산에만 쓰고, 등기부 정보가 있으면 무시한다. 채권최고액으로 환산하지 않는다.
    */
   statedPriorLoan: wonSchema.optional(),
+  /** 건축물대장 표제부(해당 지번의 건물들). 없으면 용도 룰은 판단 보류(등급에는 영향 없음) */
+  building: z.array(buildingEntrySchema).optional(),
 });
 export type RiskInput = z.infer<typeof riskInputSchema>;
 

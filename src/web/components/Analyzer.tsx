@@ -15,6 +15,7 @@ import { FinanceReport } from './FinanceReport';
 import { InputForm } from './InputForm';
 import { ListingImport } from './ListingImport';
 import { LoanCatalog } from './LoanCatalog';
+import { BuildingLookup } from './BuildingLookup';
 import { MarketLookup } from './MarketLookup';
 import type { LookupInfo } from './MarketLookup';
 import { MarketNotes } from './MarketNotes';
@@ -129,7 +130,12 @@ export function Analyzer() {
         onSubmit={analyze}
         onReset={reset}
         topSlot={<ListingImport setForm={setForm} setFin={setFin} />}
-        marketSlot={<MarketLookup form={form} setForm={setForm} onInfo={setLookupInfo} />}
+        marketSlot={
+          <>
+            <MarketLookup form={form} setForm={setForm} onInfo={setLookupInfo} />
+            <BuildingLookup form={form} setForm={setForm} />
+          </>
+        }
         extra={
           <FinanceFields
             fin={fin}
