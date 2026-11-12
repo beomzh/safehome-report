@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import type { ListingFields, UrlHint } from '../../adapters/llm/listing';
 import { findDongName, findSigungu } from '../../core';
@@ -52,7 +52,7 @@ export function ListingImport({ setForm }: Props) {
   const [regionNote, setRegionNote] = useState('');
   const [applied, setApplied] = useState(false);
   const [images, setImages] = useState<string[]>([]);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const addRef = useRef<(files: Iterable<File>) => Promise<void>>(async () => {});
 
   const addFiles = async (files: Iterable<File>) => {
     const picked = pickImageFiles(files);
@@ -71,14 +71,20 @@ export function ListingImport({ setForm }: Props) {
     setImages((prev) => [...prev, ...urls].slice(0, MAX_ATTACH_IMAGES));
   };
 
-  // 캡처를 클립보드에 복사한 뒤 이 영역에서 붙여넣기(Ctrl/Cmd+V) 하면 이미지가 들어간다
-  const onPaste = (e: React.ClipboardEvent) => {
-    const files = [...e.clipboardData.files];
-    if (pickImageFiles(files).length > 0) {
-      e.preventDefault();
-      void addFiles(files);
-    }
-  };
+  addRef.current = addFiles;
+
+  // 캡처를 클립보드에 복사한 뒤 이 화면 어디서든 붙여넣기(Ctrl/Cmd+V) 하면 이미지가 들어간다
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const files = [...(e.clipboardData?.files ?? [])];
+      if (pickImageFiles(files).length > 0) {
+        e.preventDefault();
+        void addRef.current(files);
+      }
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, []);
 
   const extract = async () => {
     setError(null);
@@ -146,7 +152,7 @@ export function ListingImport({ setForm }: Props) {
 
   const f = result?.fields;
   return (
-    <fieldset onPaste={onPaste}>
+    <fieldset>
       <legend>매물 링크·설명으로 시작하기 (AI, 선택)</legend>
       <label className="field">
         <span>매물 링크 (선택)</span>
@@ -178,20 +184,11 @@ export function ListingImport({ setForm }: Props) {
       <div className="field">
         <span>매물 화면 캡처 (선택, 최대 {MAX_ATTACH_IMAGES}장)</span>
         <div className="attach-row">
-          <button type="button" className="btn-secondary" onClick={() => fileRef.current?.click()}>
-            이미지 선택
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            multiple
-            hidden
-            onChange={(e) => {
-              void addFiles(e.target.files ?? []);
-              e.target.value = '';
-            }}
-          />
+          <div className="paste-zone" tabIndex={0} role="group" aria-label="캡처 붙여넣기 영역">
+            {images.length === 0
+              ? '캡처를 복사한 뒤 여기를 클릭하고 Ctrl/⌘+V'
+              : `캡처 ${images.length}장 — 더 붙여넣을 수 있습니다`}
+          </div>
           {images.map((src, i) => (
             <span key={src.slice(-40) + i} className="attach-thumb">
               <img src={src} alt={`첨부 캡처 ${i + 1}`} />
@@ -207,8 +204,8 @@ export function ListingImport({ setForm }: Props) {
           ))}
         </div>
         <span className="hint">
-          화면을 캡처해 클립보드에 복사한 뒤 이 영역에서 붙여넣기(Ctrl/⌘+V)하거나 파일을 선택하세요. 드래그가
-          안 되는 사이트도 캡처 → 붙여넣기는 됩니다.
+          macOS는 Ctrl+Cmd+Shift+4, Windows는 Win+Shift+S 로 영역을 캡처하면 클립보드에 복사됩니다. 이 화면
+          어디서든 Ctrl/⌘+V 로 붙여넣으면 들어갑니다(드래그가 안 되는 사이트도 가능).
         </span>
       </div>
       <button type="button" className="btn-secondary" onClick={extract} disabled={busy}>
