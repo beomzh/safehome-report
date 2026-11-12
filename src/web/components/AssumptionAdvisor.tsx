@@ -16,6 +16,8 @@ interface Props {
   amountManwon: string;
   /** 시세 조회의 주소·지역 입력값 — 있으면 지역을 자동으로 채운다 */
   address: string;
+  /** "내 상황"에서 체크한 생애최초 여부 (직접 고치기 전까지 따라간다) */
+  firstHomeDefault: boolean;
 }
 
 const FIELD_LABEL: [keyof AssumptionSuggestion, string, string][] = [
@@ -31,7 +33,7 @@ const FIELD_LABEL: [keyof AssumptionSuggestion, string, string][] = [
  * 제안은 공식 값이 아니며 사용자가 확인하고 "적용"을 눌렀을 때만 입력 칸이 채워진다.
  * LLM 으로 전송되는 것은 계약 유형·보증금(매매가)·지역·보유 주택 수·생애최초 여부뿐이다.
  */
-export function AssumptionAdvisor({ setFin, kind, amountManwon, address }: Props) {
+export function AssumptionAdvisor({ setFin, kind, amountManwon, address, firstHomeDefault }: Props) {
   const [typed, setTyped] = useState<string | null>(null);
   // 직접 고치기 전에는 주소·지역에서 시군구(+법정동)를 자동으로 가져온다
   const auto = (() => {
@@ -44,7 +46,8 @@ export function AssumptionAdvisor({ setFin, kind, amountManwon, address }: Props
   const region = typed ?? auto;
   const setRegion = (v: string) => setTyped(v);
   const [houseCount, setHouseCount] = useState<HouseCount>('none');
-  const [firstHome, setFirstHome] = useState(false);
+  const [firstHomeTyped, setFirstHome] = useState<boolean | null>(null);
+  const firstHome = firstHomeTyped ?? firstHomeDefault;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestion, setSuggestion] = useState<AssumptionSuggestion | null>(null);

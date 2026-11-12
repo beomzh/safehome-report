@@ -314,7 +314,8 @@ export type FinancePlanResult =
 /**
  * 대출·자금 계획 입력을 해석한다.
  * - 필요 조건(역산)은 대출 기준값만 있으면 계산한다.
- * - 보유 자산·연소득을 둘 다 입력하면 "내 상황" 판정(affordability)도 계산하고, 하나만 입력하면 오류로 안내한다.
+ * - 보유 자산·연소득을 둘 다 입력하면 "내 상황" 판정(affordability)도 계산한다. 하나만 입력하면 그 판정은 건너뛰고
+ *   "필요 조건"만 계산한다(연소득은 대출 추천용으로 맨 위에서 따로 입력하므로 오류로 막지 않는다).
  */
 export function buildFinancePlan(
   form: FinanceFormState,
@@ -324,15 +325,17 @@ export function buildFinancePlan(
   const errors: string[] = [];
   const hasAssets = form.assetsManwon.trim() !== '';
   const hasIncome = form.annualIncomeManwon.trim() !== '';
-  if (hasAssets !== hasIncome) {
-    errors.push('보유 자산과 연소득은 둘 다 입력하거나 둘 다 비워 두세요. (비우면 필요 조건만 계산합니다)');
-  }
   const { reqWon } = makeParsers(errors);
   const assets = hasAssets && hasIncome ? reqWon('보유 자산(자기자금)', form.assetsManwon) : undefined;
   const annualIncome = hasAssets && hasIncome ? reqWon('연소득', form.annualIncomeManwon) : undefined;
   const c = parseCommon(form, ctx, errors, config);
   if (errors.length > 0) return { ok: false, errors };
   const assumptionNotes = form.aiFields.length > 0 ? [aiAssumptionNote(form.aiFields)] : [];
+  if (hasAssets !== hasIncome) {
+    assumptionNotes.push(
+      '보유 자산과 연소득을 둘 다 입력해야 "내 상황" 판정(자금 여력)을 계산합니다. 지금은 필요 조건만 계산했습니다.',
+    );
+  }
   if (usesExample(form) && form.aiFields.length === 0) {
     assumptionNotes.push(
       '대출 기준값(LTV 70%·DSR 40%·금리 4%·스트레스 +1.5%p·30년)은 앱의 예시 가정이며 실제 은행·규제 기준이 아닙니다. 은행 안내값으로 바꿔 다시 계산해 보세요.',

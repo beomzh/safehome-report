@@ -1,19 +1,38 @@
 'use client';
 
 import { useState } from 'react';
-import { evaluateAffordability, evaluateRequirements, evaluateRisk, evaluateVerdict } from '../../core';
-import type { Affordability, Requirements, RiskInput, RiskReport, VerdictResult } from '../../core';
+import {
+  evaluateAffordability,
+  evaluateRequirements,
+  evaluateRisk,
+  evaluateVerdict,
+  recommendLoans,
+} from '../../core';
+import type {
+  Affordability,
+  Recommendation,
+  Requirements,
+  RiskInput,
+  RiskReport,
+  VerdictResult,
+} from '../../core';
 import { buildRiskInput, emptyForm, todayIso } from '../form';
 import type { FormState } from '../form';
 import { buildFinancePlan, defaultFinanceForm } from '../financeForm';
 import type { FinanceFormState } from '../financeForm';
+import { LOAN_ELIGIBILITY } from '../loanEligibility';
+import { rateInfoFor } from '../loanRates';
 import { gradeInfo } from '../present';
+import { buildLoanDeal, defaultProfile, toLoanProfile } from '../profile';
+import type { ProfileState } from '../profile';
 import { rulesConfig } from '../rulesConfig';
 import { ChecklistPanel } from './ChecklistPanel';
 import { FinanceFields } from './FinanceFields';
 import { FinanceReport } from './FinanceReport';
 import { InputForm } from './InputForm';
 import { ListingImport } from './ListingImport';
+import { LoanRecommendations } from './LoanRecommendations';
+import { ProfileFields } from './ProfileFields';
 import { LoanCatalog } from './LoanCatalog';
 import { BuildingLookup } from './BuildingLookup';
 import { MarketLookup } from './MarketLookup';
@@ -33,11 +52,13 @@ interface Result {
   costNotes?: string[];
   assumptionNotes?: string[];
   verdict: VerdictResult;
+  loanRecs: Recommendation[];
 }
 
 export function Analyzer() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [fin, setFin] = useState<FinanceFormState>(defaultFinanceForm);
+  const [profile, setProfile] = useState<ProfileState>(defaultProfile);
   const [errors, setErrors] = useState<string[]>([]);
   const [result, setResult] = useState<Result | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -103,6 +124,18 @@ export function Analyzer() {
         rulesConfig,
       ),
       input: built.input,
+      loanRecs: recommendLoans(
+        LOAN_ELIGIBILITY.products,
+        toLoanProfile(profile, fin.annualIncomeManwon),
+        buildLoanDeal({
+          kind: built.input.contract.kind,
+          amountWon: built.input.contract.amount,
+          monthlyRentManwon: fin.monthlyRentManwon,
+          lawdCd: form.lookupLawdCd,
+          areaM2: form.lookupAreaM2,
+        }),
+        rateInfoFor,
+      ),
       finance,
       requirements,
       costNotes,
@@ -114,6 +147,7 @@ export function Analyzer() {
   const reset = () => {
     setForm(emptyForm());
     setFin(defaultFinanceForm());
+    setProfile(defaultProfile());
     setErrors([]);
     setResult(null);
     setDialogOpen(false);
@@ -129,6 +163,7 @@ export function Analyzer() {
         errors={errors}
         onSubmit={analyze}
         onReset={reset}
+        profileSlot={<ProfileFields profile={profile} setProfile={setProfile} fin={fin} setFin={setFin} />}
         topSlot={<ListingImport setForm={setForm} setFin={setFin} />}
         marketSlot={
           <>
@@ -143,6 +178,7 @@ export function Analyzer() {
             kind={form.kind}
             amountManwon={form.amountManwon}
             address={form.lookupAddress}
+            firstHome={profile.firstHome}
           />
         }
       />
@@ -190,6 +226,11 @@ export function Analyzer() {
               id: 'risk',
               label: '위험 신호',
               content: <ReportView report={result.report} input={result.input} />,
+            },
+            {
+              id: 'loan-reco',
+              label: '대출 추천',
+              content: <LoanRecommendations recs={result.loanRecs} today={todayIso()} />,
             },
             ...(result.requirements
               ? [

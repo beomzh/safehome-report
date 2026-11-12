@@ -14,5 +14,22 @@ export { findSigungu, findDongName, SIGUNGU_NAMES } from './region/lookup';
 export type { RegionMatch, RegionResult } from './region/lookup';
 export { smallTenantRegion } from './region/smallTenant';
 export type { SmallTenantRegion } from './region/smallTenant';
+export {
+  eligibilitySchema,
+  evaluateProduct,
+  gridRate,
+  parseKoreanAmount,
+  recommendLoans,
+  upperBound,
+} from './loanRecommend';
+export type {
+  Check,
+  EligibilityProduct,
+  LoanDeal,
+  LoanProfile,
+  RateGuess,
+  Recommendation,
+  RecommendStatus,
+} from './loanRecommend';
 export { evaluateRecovery } from './recovery';
 export type { RecoveryResult, RecoveryScenario } from './recovery';

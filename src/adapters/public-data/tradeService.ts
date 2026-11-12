@@ -29,12 +29,16 @@ export interface TradeServiceOptions {
   pageSize?: number;
   /** 전월세는 건수가 많아 더 크게 받는다 (허용 최대 9,999 확인, 기본 1000) */
   rentPageSize?: number;
+  /** 429(요청 과다) 재시도 전 대기. 테스트에서 바꿀 수 있다 */
+  sleepFn?: (ms: number) => Promise<void>;
   /** 한 달 조회 시 최대 페이지 수 (일일 한도 보호) */
   maxPages?: number;
   cacheTtlMs?: number;
   now?: () => number;
 }
 
+/** 429 일 때 다시 시도하는 최대 횟수 (대기 1.5초, 3초, 4.5초) */
+const RATE_LIMIT_RETRIES = 3;
 const NO_RETRY = new Set(['10', '20', '22', '30', '31']);
 
 /** 'YYYY-MM-DD' 기준으로 현재 달과 이전 windowMonths 개월의 YYYYMM 목록 (최신순) */
@@ -55,6 +59,7 @@ export function createTradeService(opts: TradeServiceOptions) {
   const retries = opts.retries ?? 2;
   const pageSize = opts.pageSize ?? 100;
   const rentPageSize = opts.rentPageSize ?? 1000;
+  const sleep = opts.sleepFn ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const maxPages = opts.maxPages ?? 20;
   const ttl = opts.cacheTtlMs ?? 6 * 60 * 60 * 1000;
   const now = opts.now ?? Date.now;
@@ -78,11 +83,18 @@ export function createTradeService(opts: TradeServiceOptions) {
       numOfRows: String(kind === 'rent' ? rentPageSize : pageSize),
     }).toString();
     let lastError: unknown;
-    for (let attempt = 0; attempt <= retries; attempt++) {
+    // 429(요청 과다)는 잠시 기다리면 풀리므로 더 많이, 점점 길게 기다리며 다시 시도한다
+    const maxAttempts = Math.max(retries, RATE_LIMIT_RETRIES);
+    for (let attempt = 0; attempt <= maxAttempts; attempt++) {
       try {
         const res = await fetchFn(`${endpoint}?serviceKey=${key}&${qs}`, {
           signal: AbortSignal.timeout(timeoutMs),
         });
+        if (res.status === 429)
+          throw new PublicDataError(
+            '공공데이터포털이 요청이 많다고 잠시 제한했습니다(429). 1~2분 뒤 다시 조회하세요.',
+            'http429',
+          );
         if (!res.ok) throw new PublicDataError(`공공데이터 API HTTP ${res.status}`);
         const text = await res.text();
         // 오류 응답이면 여기서 던져 재시도 규칙을 적용한다
@@ -103,6 +115,12 @@ export function createTradeService(opts: TradeServiceOptions) {
           );
         }
         if (e instanceof PublicDataError && e.code && NO_RETRY.has(e.code)) throw e;
+        if (e instanceof PublicDataError && e.code === 'http429') {
+          if (attempt >= RATE_LIMIT_RETRIES) throw e;
+          await sleep(1500 * (attempt + 1));
+        } else if (attempt >= retries) {
+          throw e;
+        }
       }
     }
     throw lastError instanceof Error ? lastError : new PublicDataError('공공데이터 API 호출 실패');
@@ -220,8 +238,13 @@ export function createTradeService(opts: TradeServiceOptions) {
       config: RulesConfig['marketEstimate'];
     }): Promise<MarketEstimate & { monthsQueried: number; similar: SimilarComplex[] }> {
       const months = monthsToFetch(args.asOf, args.config.windowMonths);
-      const batches = await Promise.all(months.map((ym) => fetchMonth(args.lawdCd, ym, args.housing)));
-      const all = batches.flat();
+      // 한꺼번에 13개월을 부르면 429 가 나므로 4개월씩 묶어 호출한다
+      const all: TradeRecord[] = [];
+      for (let i = 0; i < months.length; i += 4) {
+        const chunk = months.slice(i, i + 4);
+        const got = await Promise.all(chunk.map((ym) => fetchMonth(args.lawdCd, ym, args.housing)));
+        all.push(...got.flat());
+      }
       const spec = HOUSING[args.housing ?? 'apt'];
       const tolerance =
         spec.areaToleranceRatio !== undefined

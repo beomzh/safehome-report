@@ -156,3 +156,42 @@ describe('estimateRent (전월세 시세)', () => {
     expect(f.urls[0]).toContain('numOfRows=1000');
   });
 });
+
+describe('429(요청 과다) 처리', () => {
+  const noWait = async () => {};
+  it('429 는 기다렸다가 다시 시도해 성공하면 결과를 돌려준다', async () => {
+    const waits: number[] = [];
+    const f = fakeFetch((_u, n) =>
+      n <= 2 ? new Response('too many', { status: 429 }) : ok(body([rec('1,000')], 1)),
+    );
+    const s = createTradeService({
+      apiKey: 'k',
+      fetchFn: f.fn,
+      retries: 0,
+      sleepFn: async (ms) => {
+        waits.push(ms);
+      },
+    });
+    const records = await s.fetchMonth('11680', '202610');
+    expect(records).toHaveLength(1);
+    expect(f.urls).toHaveLength(3);
+    expect(waits).toEqual([1500, 3000]); // 점점 길게 기다린다
+  });
+
+  it('계속 429 면 친절한 문구와 http429 코드로 실패한다', async () => {
+    const f = fakeFetch(() => new Response('', { status: 429 }));
+    const s = createTradeService({ apiKey: 'k', fetchFn: f.fn, sleepFn: noWait });
+    await expect(s.fetchMonth('11680', '202610')).rejects.toMatchObject({
+      code: 'http429',
+      message: expect.stringContaining('잠시 제한'),
+    });
+    expect(f.urls).toHaveLength(4); // 처음 + 재시도 3번
+  });
+
+  it('429 가 아닌 오류는 기존 재시도 횟수만 따른다', async () => {
+    const f = fakeFetch(() => new Response('', { status: 500 }));
+    const s = createTradeService({ apiKey: 'k', fetchFn: f.fn, retries: 1, sleepFn: noWait });
+    await expect(s.fetchMonth('11680', '202610')).rejects.toThrow('HTTP 500');
+    expect(f.urls).toHaveLength(2);
+  });
+});
