@@ -1,6 +1,11 @@
 import { LlmError } from '../../../adapters/llm/provider';
 import { createLlmFromEnv } from '../../../adapters/llm/openaiCompatible';
-import { extractListing, MAX_LISTING_CHARS, parseListingUrl } from '../../../adapters/llm/listing';
+import {
+  extractListing,
+  MAX_LISTING_CHARS,
+  parseListingUrl,
+  validateListingImages,
+} from '../../../adapters/llm/listing';
 import { getLogger, newRequestId } from '../../../adapters/log/logger';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +14,7 @@ const TAG = 'LISTING';
 
 /**
  * 매물 설명 텍스트에서 항목을 추출한다 (LLM 사용, 선택 기능).
- * 이 경로로 LLM 서버에 전송되는 것은 사용자가 붙여넣은 매물 설명뿐이다(전화번호·이메일은 제거).
+ * 이 경로로 LLM 서버에 전송되는 것은 사용자가 붙여넣은 매물 설명과 첨부한 매물 화면 캡처뿐이다(텍스트의 전화번호·이메일은 제거하지만 이미지 속 글자는 제거할 수 없다).
  * 성명·재무 정보·등기부 내용은 받지 않는다. 링크는 읽지 않고 플랫폼·매물 번호 힌트만 해석한다.
  * 로그에는 요청 번호·소요 시간·글자 수·추출 항목 수만 남기고 매물 텍스트·링크·키는 남기지 않는다.
  */
@@ -37,7 +42,7 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: { text?: unknown; url?: unknown };
+  let body: { text?: unknown; url?: unknown; images?: unknown };
   try {
     body = (await request.json()) as typeof body;
   } catch {
@@ -45,10 +50,19 @@ export async function POST(request: Request) {
     return Response.json({ error: '요청 형식이 올바르지 않습니다.' }, { status: 400 });
   }
   const text = typeof body.text === 'string' ? body.text.trim() : '';
-  if (text.length < 10) {
+  const imageError = validateListingImages(body.images);
+  if (imageError) {
+    log.warn(TAG, 'bad_request', { req, status: 400, reason: 'invalid_images' });
+    return Response.json({ error: imageError }, { status: 400 });
+  }
+  const images = (body.images as string[] | undefined) ?? [];
+  if (text.length < 10 && images.length === 0) {
     log.warn(TAG, 'bad_request', { req, status: 400, reason: 'text_too_short', chars: text.length });
     return Response.json(
-      { error: '매물 설명 텍스트를 붙여넣어 주세요. (링크만으로는 내용을 읽을 수 없습니다)' },
+      {
+        error:
+          '매물 설명 텍스트를 붙여넣거나 매물 화면 캡처를 넣어 주세요. (링크만으로는 내용을 읽을 수 없습니다)',
+      },
       { status: 400 },
     );
   }
@@ -61,7 +75,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const fields = await extractListing(llm, text);
+    const fields = await extractListing(llm, text, images);
     const hint = typeof body.url === 'string' && body.url.trim() ? parseListingUrl(body.url) : null;
     log.info(TAG, 'extract_ok', {
       req,
@@ -69,6 +83,7 @@ export async function POST(request: Request) {
       ms: Date.now() - started,
       provider: llm.name,
       chars: text.length,
+      images: images.length,
       extracted: Object.values(fields).filter((v) => v !== null && !Array.isArray(v)).length,
       warnings: fields.warnings.length,
       urlPlatform: hint?.platform ?? 'none',

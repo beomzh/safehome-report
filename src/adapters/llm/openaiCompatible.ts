@@ -64,12 +64,24 @@ export function createOpenAiCompatibleProvider(opts: OpenAiCompatibleOptions): L
     async generate<T>(req: GenerateRequest<T>): Promise<T> {
       const jsonSchema = z.toJSONSchema(req.schema);
       const maxTokens = req.maxOutputTokens ?? 4000;
+      const images = req.images ?? [];
       const body =
         format === 'responses'
           ? {
               model: opts.model,
               instructions: req.system,
-              input: req.input,
+              input:
+                images.length === 0
+                  ? req.input
+                  : [
+                      {
+                        role: 'user',
+                        content: [
+                          { type: 'input_text', text: req.input },
+                          ...images.map((image_url) => ({ type: 'input_image', image_url })),
+                        ],
+                      },
+                    ],
               max_output_tokens: maxTokens,
               text: {
                 format: { type: 'json_schema', name: req.schemaName, strict: true, schema: jsonSchema },
@@ -79,7 +91,16 @@ export function createOpenAiCompatibleProvider(opts: OpenAiCompatibleOptions): L
               model: opts.model,
               messages: [
                 { role: 'system', content: req.system },
-                { role: 'user', content: req.input },
+                {
+                  role: 'user',
+                  content:
+                    images.length === 0
+                      ? req.input
+                      : [
+                          { type: 'text', text: req.input },
+                          ...images.map((url) => ({ type: 'image_url', image_url: { url } })),
+                        ],
+                },
               ],
               max_tokens: maxTokens,
               response_format: {

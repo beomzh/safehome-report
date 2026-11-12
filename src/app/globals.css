@@ -644,3 +644,46 @@ dialog.report-dialog::backdrop {
     margin-bottom: 8px;
   }
 }
+
+/* 사이트 보기(프레임) */
+dialog.viewer-dialog {
+  width: min(1200px, 98vw);
+  height: 92vh;
+}
+.viewer-dialog .dialog-inner {
+  height: 100%;
+}
+.viewer-url {
+  flex: 1;
+  min-width: 0;
+}
+.viewer-hint {
+  margin: 6px 16px;
+}
+.viewer-frame {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: #fff;
+}
+.attach-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.attach-thumb {
+  position: relative;
+}
+.attach-thumb img {
+  display: block;
+  height: 72px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.attach-thumb button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+}

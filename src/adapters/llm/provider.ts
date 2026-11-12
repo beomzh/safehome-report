@@ -15,6 +15,8 @@ export interface GenerateRequest<T> {
   system: string;
   /** 사용자 입력(신뢰할 수 없는 외부 텍스트를 포함할 수 있음) */
   input: string;
+  /** 첨부 이미지(data URL: data:image/jpeg;base64,…). 모델이 이미지를 지원해야 한다 */
+  images?: string[];
   schema: ZodType<T>;
   /** 구조화 출력 스키마 이름 (영문·숫자·밑줄) */
   schemaName: string;

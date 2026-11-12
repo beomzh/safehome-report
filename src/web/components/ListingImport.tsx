@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import type { ListingFields, UrlHint } from '../../adapters/llm/listing';
 import { findDongName, findSigungu } from '../../core';
 import type { FormState } from '../form';
+import { fileToDataUrl, MAX_ATTACH_IMAGES, pickImageFiles } from '../imageAttach';
+import { openSiteViewer } from '../siteViewer';
 
 interface Props {
   setForm: Dispatch<SetStateAction<FormState>>;
@@ -49,14 +51,42 @@ export function ListingImport({ setForm }: Props) {
   } | null>(null);
   const [regionNote, setRegionNote] = useState('');
   const [applied, setApplied] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const addFiles = async (files: Iterable<File>) => {
+    const picked = pickImageFiles(files);
+    if (picked.length === 0) return;
+    const room = MAX_ATTACH_IMAGES - images.length;
+    if (room <= 0) {
+      setError(`이미지는 최대 ${MAX_ATTACH_IMAGES}장까지 넣을 수 있습니다.`);
+      return;
+    }
+    const urls = (await Promise.all(picked.slice(0, room).map(fileToDataUrl))).filter(
+      (u): u is string => u !== null,
+    );
+    if (urls.length < Math.min(picked.length, room))
+      setError('일부 이미지를 읽지 못했습니다. PNG·JPEG·WebP 인지 확인하세요.');
+    else setError(null);
+    setImages((prev) => [...prev, ...urls].slice(0, MAX_ATTACH_IMAGES));
+  };
+
+  // 캡처를 클립보드에 복사한 뒤 이 영역에서 붙여넣기(Ctrl/Cmd+V) 하면 이미지가 들어간다
+  const onPaste = (e: React.ClipboardEvent) => {
+    const files = [...e.clipboardData.files];
+    if (pickImageFiles(files).length > 0) {
+      e.preventDefault();
+      void addFiles(files);
+    }
+  };
 
   const extract = async () => {
     setError(null);
     setResult(null);
     setApplied(false);
-    if (text.trim().length < 10) {
+    if (text.trim().length < 10 && images.length === 0) {
       setError(
-        '링크만으로는 매물 내용을 읽을 수 없습니다. 매물 화면의 설명(가격·면적·층 등)을 복사해 아래 칸에 붙여넣어 주세요.',
+        '링크만으로는 매물 내용을 읽을 수 없습니다. 매물 화면의 설명을 복사해 붙여넣거나, 화면을 캡처해 이미지로 넣어 주세요.',
       );
       return;
     }
@@ -65,7 +95,7 @@ export function ListingImport({ setForm }: Props) {
       const res = await fetch('/api/listing', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ text, url }),
+        body: JSON.stringify({ text, url, images }),
       });
       const data = (await res.json()) as ListingResponse;
       if (!res.ok || !data.fields) {
@@ -116,7 +146,7 @@ export function ListingImport({ setForm }: Props) {
 
   const f = result?.fields;
   return (
-    <fieldset>
+    <fieldset onPaste={onPaste}>
       <legend>매물 링크·설명으로 시작하기 (AI, 선택)</legend>
       <label className="field">
         <span>매물 링크 (선택)</span>
@@ -128,6 +158,14 @@ export function ListingImport({ setForm }: Props) {
           onChange={(e) => setUrl(e.target.value)}
         />
       </label>
+      <button
+        type="button"
+        className="btn-secondary"
+        onClick={() => url.trim() && openSiteViewer(url)}
+        disabled={!url.trim()}
+      >
+        이 링크를 화면에서 보기
+      </button>
       <label className="field">
         <span>매물 설명 붙여넣기</span>
         <textarea
@@ -137,14 +175,51 @@ export function ListingImport({ setForm }: Props) {
           onChange={(e) => setText(e.target.value)}
         />
       </label>
+      <div className="field">
+        <span>매물 화면 캡처 (선택, 최대 {MAX_ATTACH_IMAGES}장)</span>
+        <div className="attach-row">
+          <button type="button" className="btn-secondary" onClick={() => fileRef.current?.click()}>
+            이미지 선택
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            multiple
+            hidden
+            onChange={(e) => {
+              void addFiles(e.target.files ?? []);
+              e.target.value = '';
+            }}
+          />
+          {images.map((src, i) => (
+            <span key={src.slice(-40) + i} className="attach-thumb">
+              <img src={src} alt={`첨부 캡처 ${i + 1}`} />
+              <button
+                type="button"
+                className="btn-secondary"
+                aria-label={`캡처 ${i + 1} 삭제`}
+                onClick={() => setImages((prev) => prev.filter((_, j) => j !== i))}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+        <span className="hint">
+          화면을 캡처해 클립보드에 복사한 뒤 이 영역에서 붙여넣기(Ctrl/⌘+V)하거나 파일을 선택하세요. 드래그가
+          안 되는 사이트도 캡처 → 붙여넣기는 됩니다.
+        </span>
+      </div>
       <button type="button" className="btn-secondary" onClick={extract} disabled={busy}>
         {busy ? '추출 중…' : 'AI로 항목 추출'}
       </button>
       <p className="hint">
         앱은 링크 내용을 직접 읽지 않습니다(플랫폼 약관·차단). 링크에서는 사이트와 매물 번호만 인식하고,
-        항목은 붙여넣은 설명에서 추출합니다. 이 버튼을 누르면 붙여넣은 설명이 LLM 서버로
-        전송됩니다(전화번호·이메일은 제거). 추출 결과는 확인 후에만 입력칸에 적용되며, 판정은 AI가 아니라 계산
-        규칙이 합니다.
+        항목은 붙여넣은 설명에서 추출합니다. 이 버튼을 누르면 붙여넣은 설명과 첨부한 캡처가 LLM 서버로
+        전송됩니다(텍스트의 전화번호·이메일은 제거하지만 이미지 속 글자는 제거할 수 없으니, 연락처·이름이
+        보이면 가리고 캡처하세요). 추출 결과는 확인 후에만 입력칸에 적용되며, 판정은 AI가 아니라 계산 규칙이
+        합니다.
       </p>
 
       {error && (
