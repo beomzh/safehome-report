@@ -122,7 +122,15 @@ export function Analyzer() {
         onReset={reset}
         topSlot={<ListingImport setForm={setForm} />}
         marketSlot={<MarketLookup form={form} setForm={setForm} />}
-        extra={<FinanceFields fin={fin} setFin={setFin} kind={form.kind} amountManwon={form.amountManwon} />}
+        extra={
+          <FinanceFields
+            fin={fin}
+            setFin={setFin}
+            kind={form.kind}
+            amountManwon={form.amountManwon}
+            address={form.lookupAddress}
+          />
+        }
       />
       <div className="results">
         {result && info ? (
@@ -154,23 +162,60 @@ export function Analyzer() {
       </div>
 
       {result && (
-        <ReportDialog open={dialogOpen} onClose={() => setDialogOpen(false)} title="분석 리포트">
-          <VerdictPanel result={result.verdict} kind={result.input.contract.kind} />
-          <ReportView report={result.report} input={result.input} />
-          {result.requirements && (
-            <RequirementsReport
-              requirements={result.requirements}
-              kind={result.input.contract.kind}
-              amountWon={result.input.contract.amount}
-              grade={result.report.grade}
-              costNotes={result.costNotes ?? []}
-              assumptionNotes={result.assumptionNotes ?? []}
-            />
-          )}
-          {result.finance && <FinanceReport result={result.finance} grade={result.report.grade} />}
-          <LoanCatalog kind={result.input.contract.kind} grade={result.report.grade} />
-          <ChecklistPanel kind={result.input.contract.kind} />
-        </ReportDialog>
+        <ReportDialog
+          open={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+          title="분석 리포트"
+          tabs={[
+            {
+              id: 'verdict',
+              label: '종합 판정',
+              content: <VerdictPanel result={result.verdict} kind={result.input.contract.kind} />,
+            },
+            {
+              id: 'risk',
+              label: '위험 신호',
+              content: <ReportView report={result.report} input={result.input} />,
+            },
+            ...(result.requirements
+              ? [
+                  {
+                    id: 'requirements',
+                    label: '필요 조건',
+                    content: (
+                      <RequirementsReport
+                        requirements={result.requirements}
+                        kind={result.input.contract.kind}
+                        amountWon={result.input.contract.amount}
+                        grade={result.report.grade}
+                        costNotes={result.costNotes ?? []}
+                        assumptionNotes={result.assumptionNotes ?? []}
+                      />
+                    ),
+                  },
+                ]
+              : []),
+            ...(result.finance
+              ? [
+                  {
+                    id: 'finance',
+                    label: '자금 여력',
+                    content: <FinanceReport result={result.finance} grade={result.report.grade} />,
+                  },
+                ]
+              : []),
+            {
+              id: 'loans',
+              label: '대출 안내',
+              content: <LoanCatalog kind={result.input.contract.kind} grade={result.report.grade} />,
+            },
+            {
+              id: 'checklist',
+              label: '체크리스트',
+              content: <ChecklistPanel kind={result.input.contract.kind} />,
+            },
+          ]}
+        />
       )}
     </div>
   );

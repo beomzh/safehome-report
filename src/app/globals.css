@@ -740,3 +740,55 @@ body.viewer-open {
   top: -6px;
   right: -6px;
 }
+
+/* 리포트 시트(탭) */
+.tabs {
+  flex: none;
+  display: flex;
+  gap: 4px;
+  padding: 8px 16px 0;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+.tab {
+  flex: none;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+.tab.on {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  margin-bottom: -1px;
+  border-bottom: 1px solid var(--surface);
+}
+.tab-panel {
+  display: grid;
+  gap: 16px;
+}
+.tab-panel[hidden] {
+  display: none;
+}
+@media print {
+  .tabs {
+    display: none;
+  }
+  .tab-panel[hidden] {
+    display: grid !important;
+  }
+}
+
+/* 입력 섹션(접이식) */
+.sec > summary {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+}

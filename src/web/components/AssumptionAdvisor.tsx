@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import type { AssumptionSuggestion, HouseCount } from '../../adapters/llm/assumptions';
+import { findDongName, findSigungu, SIGUNGU_NAMES } from '../../core';
 import { applySuggestion } from '../assumptions';
 import type { FinanceFormState } from '../financeForm';
 import type { Kind } from '../form';
@@ -13,6 +14,8 @@ interface Props {
   kind: Kind;
   /** 메인 폼의 보증금(매매가) 입력값 (만원) */
   amountManwon: string;
+  /** 시세 조회의 주소·지역 입력값 — 있으면 지역을 자동으로 채운다 */
+  address: string;
 }
 
 const FIELD_LABEL: [keyof AssumptionSuggestion, string, string][] = [
@@ -28,8 +31,18 @@ const FIELD_LABEL: [keyof AssumptionSuggestion, string, string][] = [
  * 제안은 공식 값이 아니며 사용자가 확인하고 "적용"을 눌렀을 때만 입력 칸이 채워진다.
  * LLM 으로 전송되는 것은 계약 유형·보증금(매매가)·지역·보유 주택 수·생애최초 여부뿐이다.
  */
-export function AssumptionAdvisor({ setFin, kind, amountManwon }: Props) {
-  const [region, setRegion] = useState('');
+export function AssumptionAdvisor({ setFin, kind, amountManwon, address }: Props) {
+  const [typed, setTyped] = useState<string | null>(null);
+  // 직접 고치기 전에는 주소·지역에서 시군구(+법정동)를 자동으로 가져온다
+  const auto = (() => {
+    if (!address.trim()) return '';
+    const r = findSigungu(address);
+    if (!r.ok) return address.trim().slice(0, 50);
+    const dong = findDongName(address);
+    return `${r.match.name}${dong ? ` ${dong}` : ''}`;
+  })();
+  const region = typed ?? auto;
+  const setRegion = (v: string) => setTyped(v);
   const [houseCount, setHouseCount] = useState<HouseCount>('none');
   const [firstHome, setFirstHome] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -85,11 +98,17 @@ export function AssumptionAdvisor({ setFin, kind, amountManwon }: Props) {
         <input
           autoComplete="off"
           maxLength={50}
-          placeholder="규제지역 여부를 판단하는 데 쓰입니다"
+          placeholder="주소·지역을 입력했으면 자동으로 들어옵니다 (목록에서 선택도 가능)"
+          list="sigungu-options"
           value={region}
           onChange={(e) => setRegion(e.target.value)}
         />
       </label>
+      <datalist id="sigungu-options">
+        {SIGUNGU_NAMES.map((n) => (
+          <option key={n} value={n} />
+        ))}
+      </datalist>
       <div className="row2">
         <label className="field">
           <span>보유 주택</span>

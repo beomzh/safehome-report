@@ -12,11 +12,13 @@ interface Props {
   kind: Kind;
   /** 메인 폼의 보증금(매매가) 입력값 (만원) — AI 기준값 제안에 사용 */
   amountManwon: string;
+  /** 시세 조회의 주소·지역 (AI 기준값 제안의 지역 자동 입력용) */
+  address: string;
 }
 
 type TextKey = Exclude<keyof FinanceFormState, 'enabled' | 'autoCosts' | 'aiFields' | 'singleHome'>;
 
-export function FinanceFields({ fin, setFin, kind, amountManwon }: Props) {
+export function FinanceFields({ fin, setFin, kind, amountManwon, address }: Props) {
   const isSale = kind === 'sale';
   const isJeonse = kind === 'jeonse';
 
@@ -38,8 +40,8 @@ export function FinanceFields({ fin, setFin, kind, amountManwon }: Props) {
   );
 
   return (
-    <>
-      <h2>4. 대출·자금 계획 (선택)</h2>
+    <details className="fold sec" open>
+      <summary>4. 대출·자금 계획 (선택)</summary>
       <label className="check">
         <input
           type="checkbox"
@@ -56,7 +58,10 @@ export function FinanceFields({ fin, setFin, kind, amountManwon }: Props) {
 
       {fin.enabled && (
         <div className="registry">
-          <AssumptionAdvisor setFin={setFin} kind={kind} amountManwon={amountManwon} />
+          <details className="fold">
+            <summary>AI로 기준값 제안받기 (선택)</summary>
+            <AssumptionAdvisor setFin={setFin} kind={kind} amountManwon={amountManwon} address={address} />
+          </details>
 
           <fieldset>
             <legend>내 재무 정보 (선택 — 비우면 "필요 조건"만 계산)</legend>
@@ -150,6 +155,6 @@ export function FinanceFields({ fin, setFin, kind, amountManwon }: Props) {
           </details>
         </div>
       )}
-    </>
+    </details>
   );
 }
