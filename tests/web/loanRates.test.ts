@@ -76,12 +76,13 @@ describe('금리 데이터 파일', () => {
     }
   });
 
-  it('금리를 확인하지 못한 상품(월세 대출)은 데이터가 없어 화면이 안내 문구를 쓴다', () => {
+  it('금리를 확인하지 못한 상품은 데이터가 없어 화면이 안내 문구를 쓴다', () => {
     expect(rateInfoFor('monthly-rent-loan')).toBeUndefined();
+    expect(rateInfoFor('없는-상품')).toBeUndefined();
   });
 
-  it('전세·월세·매매 각각에 금리 안내가 하나 이상 있다 (월세 제외 전세·매매)', () => {
-    for (const kind of ['jeonse', 'sale'] as const) {
+  it('전세·월세·매매 각각에 금리 안내가 하나 이상 있다', () => {
+    for (const kind of ['jeonse', 'monthly', 'sale'] as const) {
       expect(loansFor(kind).some((p) => rateInfoFor(p.id))).toBe(true);
     }
   });
@@ -164,5 +165,48 @@ describe('확인일 경과 경고', () => {
   it(`${STALE_AFTER_DAYS}일까지는 정상, 넘으면 오래된 정보`, () => {
     expect(isStale('2026-10-05', '2026-11-09')).toBe(false); // 35일
     expect(isStale('2026-10-04', '2026-11-09')).toBe(true); // 36일
+  });
+});
+
+describe('신생아 특례·월세 대출 (공식 페이지, 2026-11-12)', () => {
+  it('신생아 특례 두 상품은 연소득 9구간 × 4열 칸별 금리표를 갖고 범위와 일치한다', () => {
+    for (const id of ['newborn-buteommok', 'newborn-didimdol']) {
+      const info = rateInfoFor(id)!;
+      expect(info.grid!.rows).toHaveLength(9);
+      expect(info.grid!.cols).toHaveLength(4);
+      const all = info.grid!.rows.flatMap((r) => r.percents);
+      expect(Math.min(...all)).toBe(info.range!.minPercent);
+      expect(Math.max(...all)).toBe(info.range!.maxPercent);
+    }
+    expect(rateInfoFor('newborn-buteommok')?.range).toEqual({ minPercent: 1.3, maxPercent: 4.3 });
+    expect(rateInfoFor('newborn-didimdol')?.range).toEqual({ minPercent: 1.8, maxPercent: 4.5 });
+  });
+
+  it('신생아 특례 표는 소득이 높을수록(행)·보증금이 클수록(열) 금리가 낮아지지 않는다', () => {
+    for (const id of ['newborn-buteommok', 'newborn-didimdol']) {
+      const rows = rateInfoFor(id)!.grid!.rows;
+      for (const r of rows)
+        for (let i = 1; i < r.percents.length; i++)
+          expect(r.percents[i]).toBeGreaterThanOrEqual(r.percents[i - 1]!);
+      for (let i = 1; i < rows.length; i++)
+        expect(rows[i]!.percents[0]).toBeGreaterThanOrEqual(rows[i - 1]!.percents[0]!);
+    }
+  });
+
+  it('월세 대출 두 상품의 금리와 특례 종료 후 금리를 담지 않았다는 안내', () => {
+    expect(rateInfoFor('housing-stable-wolse')?.table?.rows).toEqual([
+      { label: '우대형', percent: 1.3 },
+      { label: '일반형', percent: 1.8 },
+    ]);
+    expect(rateInfoFor('youth-wolse')?.table?.rows[0]).toEqual({ label: '보증금 대출', percent: 1.3 });
+    expect(rateInfoFor('newborn-buteommok')?.notCovered.join(' ')).toContain('특례금리 적용 종료 후');
+  });
+
+  it('모든 새 상품은 loans 목록에 있고 계약 유형에 맞는다', () => {
+    const kinds = (id: string) => LOAN_PRODUCTS.find((p) => p.id === id)?.kinds;
+    expect(kinds('newborn-buteommok')).toEqual(['jeonse']);
+    expect(kinds('newborn-didimdol')).toEqual(['sale']);
+    expect(kinds('housing-stable-wolse')).toEqual(['monthly']);
+    expect(kinds('youth-wolse')).toEqual(['monthly']);
   });
 });
