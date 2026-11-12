@@ -162,3 +162,25 @@ describe('createLlmFromEnv', () => {
     expect(p?.name).toBe('openai-compatible/responses');
   });
 });
+
+describe('이미지 입력', () => {
+  const img = 'data:image/jpeg;base64,AAAA';
+  it('Responses 형식은 input_image 로 보낸다', async () => {
+    const f = fake(() => new Response(responsesBody('{"answer":"ok","n":null}')));
+    await createOpenAiCompatibleProvider(opts(f.fn)).generate({ ...req, images: [img] });
+    const body = JSON.parse(f.calls[0]!.init.body as string);
+    expect(body.input[0].content).toEqual([
+      { type: 'input_text', text: 'hello' },
+      { type: 'input_image', image_url: img },
+    ]);
+  });
+  it('Chat 형식은 image_url 로 보낸다', async () => {
+    const f = fake(() => new Response(chatBody('{"answer":"ok","n":null}')));
+    await createOpenAiCompatibleProvider(opts(f.fn, 'https://h/v1')).generate({ ...req, images: [img] });
+    const body = JSON.parse(f.calls[0]!.init.body as string);
+    expect(body.messages[1].content).toEqual([
+      { type: 'text', text: 'hello' },
+      { type: 'image_url', image_url: { url: img } },
+    ]);
+  });
+});

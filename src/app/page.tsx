@@ -1,5 +1,6 @@
 import { Analyzer } from '../web/components/Analyzer';
 import { ThemeToggle } from '../web/components/ThemeToggle';
+import { SiteViewer } from '../web/components/SiteViewer';
 import { Disclaimer } from '../web/components/Disclaimer';
 
 export default function Home() {
@@ -15,6 +16,7 @@ export default function Home() {
       </header>
       <Disclaimer />
       <Analyzer />
+      <SiteViewer />
     </main>
   );
 }

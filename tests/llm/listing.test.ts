@@ -134,3 +134,31 @@ describe('면적·유형 추출 (평수 환산)', () => {
     expect(SYSTEM_PROMPT).toContain('areaPyeong');
   });
 });
+
+describe('이미지 첨부', () => {
+  const ok = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
+  it('PNG·JPEG·WebP data URL 만 허용하고 개수·크기를 제한한다', async () => {
+    const { validateListingImages } = await import('../../src/adapters/llm/listing');
+    expect(validateListingImages(undefined)).toBeNull();
+    expect(validateListingImages([ok])).toBeNull();
+    expect(validateListingImages([ok, ok, ok, ok, ok])).toContain('최대');
+    expect(validateListingImages(['https://x.test/a.png'])).toContain('지원하지 않는');
+    expect(validateListingImages(['data:image/svg+xml;base64,AAAA'])).toContain('지원하지 않는');
+    expect(validateListingImages(['data:image/png;base64,' + 'A'.repeat(3_000_000)])).toContain(
+      '너무 큽니다',
+    );
+    expect(validateListingImages('x')).toContain('형식');
+  });
+  it('이미지를 공급자에 그대로 넘긴다', async () => {
+    let seen: string[] | undefined;
+    const provider: LlmProvider = {
+      name: 'fake',
+      async generate(req) {
+        seen = req.images;
+        return raw() as never;
+      },
+    };
+    await extractListing(provider, '', [ok]);
+    expect(seen).toEqual([ok]);
+  });
+});
