@@ -6,9 +6,16 @@ import { findDongName, findSigungu } from '../../core';
 import type { FormState } from '../form';
 import { formatWon } from '../present';
 
+export interface LookupInfo {
+  similar: NonNullable<LookupResponse['similar']>;
+  message: { tone: 'ok' | 'warn' | 'error'; text: string } | null;
+}
+
 interface Props {
   form: FormState;
   setForm: Dispatch<SetStateAction<FormState>>;
+  /** 조회 결과(다른 단지·안내 문구)를 리포트에서 다시 보여주기 위해 올려 보낸다 */
+  onInfo?: (info: LookupInfo) => void;
 }
 
 interface LookupResponse {
@@ -30,7 +37,7 @@ interface LookupResponse {
  * 아파트 실거래가(공공데이터포털)로 시세를 조회해 시세 입력칸을 채운다.
  * 서버로 보내는 값은 법정동코드·전용면적·단지명뿐이며 성명·금액·재무 정보는 보내지 않는다.
  */
-export function MarketLookup({ form, setForm }: Props) {
+export function MarketLookup({ form, setForm, onInfo }: Props) {
   const housing = form.lookupHousing;
   const lawdCd = form.lookupLawdCd;
   const areaM2 = form.lookupAreaM2;
@@ -93,6 +100,10 @@ export function MarketLookup({ form, setForm }: Props) {
       setBusy(false);
     }
   };
+
+  useEffect(() => {
+    onInfo?.({ similar, message });
+  }, [similar, message]);
 
   // 매물 설명을 적용하면 필요한 값이 채워진 상태에서 시세 조회를 자동 실행한다
   useEffect(() => {

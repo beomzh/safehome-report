@@ -1,12 +1,9 @@
 import { SITE_GROUPS } from '../siteLinks';
 
-/** 방문 전 점검에 쓰는 외부 사이트 모음 (링크만 제공, 앱이 호출하지 않음) */
-export function SiteLinks() {
+/** 사이트 링크 목록 (링크만 제공, 앱이 호출하지 않음) */
+export function SiteLinkList() {
   return (
-    <details className="card site-links">
-      <summary>
-        <strong>함께 확인할 사이트</strong>
-      </summary>
+    <>
       <p className="hint">링크만 제공하며 이 앱은 해당 사이트로 정보를 보내지 않습니다.</p>
       {SITE_GROUPS.map((g) => (
         <div key={g.title}>
@@ -23,6 +20,18 @@ export function SiteLinks() {
           </ul>
         </div>
       ))}
+    </>
+  );
+}
+
+/** 방문 전 점검에 쓰는 외부 사이트 모음 */
+export function SiteLinks() {
+  return (
+    <details className="card site-links">
+      <summary>
+        <strong>함께 확인할 사이트</strong>
+      </summary>
+      <SiteLinkList />
     </details>
   );
 }

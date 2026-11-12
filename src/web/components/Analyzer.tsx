@@ -16,6 +16,8 @@ import { InputForm } from './InputForm';
 import { ListingImport } from './ListingImport';
 import { LoanCatalog } from './LoanCatalog';
 import { MarketLookup } from './MarketLookup';
+import type { LookupInfo } from './MarketLookup';
+import { MarketNotes } from './MarketNotes';
 import { VerdictPanel } from './VerdictPanel';
 import { SiteLinks } from './SiteLinks';
 import { ReportDialog } from './ReportDialog';
@@ -38,6 +40,7 @@ export function Analyzer() {
   const [errors, setErrors] = useState<string[]>([]);
   const [result, setResult] = useState<Result | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [lookupInfo, setLookupInfo] = useState<LookupInfo>({ similar: [], message: null });
 
   const analyze = () => {
     const built = buildRiskInput(form, todayIso());
@@ -121,7 +124,7 @@ export function Analyzer() {
         onSubmit={analyze}
         onReset={reset}
         topSlot={<ListingImport setForm={setForm} setFin={setFin} />}
-        marketSlot={<MarketLookup form={form} setForm={setForm} />}
+        marketSlot={<MarketLookup form={form} setForm={setForm} onInfo={setLookupInfo} />}
         extra={
           <FinanceFields
             fin={fin}
@@ -204,6 +207,11 @@ export function Analyzer() {
                   },
                 ]
               : []),
+            {
+              id: 'market',
+              label: '시세·대안 단지',
+              content: <MarketNotes info={lookupInfo} />,
+            },
             {
               id: 'loans',
               label: '대출 안내',
