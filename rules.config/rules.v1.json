@@ -18,6 +18,17 @@
     "status": "provisional",
     "source": "초기 잠정값. 도메인 전문가 검토 후 확정"
   },
+  "recovery": {
+    "scenarioPercents": [100, 90, 80, 70],
+    "smallTenant": {
+      "seoul": { "depositLimitWon": 165000000, "amountWon": 55000000 },
+      "capital": { "depositLimitWon": 145000000, "amountWon": 48000000 },
+      "metro": { "depositLimitWon": 85000000, "amountWon": 28000000 },
+      "other": { "depositLimitWon": 75000000, "amountWon": 25000000 }
+    },
+    "status": "provisional",
+    "source": "소액임차인 기준은 주택임대차보호법 시행령 제10조·제11조(국가법령정보센터, 2026-07-01 시행본, 2023-02-21 개정 값)를 2026-11-12 확인. 낙찰가율 시나리오(100/90/80/70%)는 예측이 아닌 가정이며 잠정값"
+  },
   "marketEstimate": {
     "windowMonths": 12,
     "minSamples": 3,

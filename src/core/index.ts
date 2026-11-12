@@ -12,3 +12,7 @@ export { evaluateVerdict, VERDICT_LABEL, STATUS_LABEL } from './verdict/criteria
 export type { Criterion, CriterionStatus, Verdict, VerdictInput, VerdictResult } from './verdict/criteria';
 export { findSigungu, findDongName, SIGUNGU_NAMES } from './region/lookup';
 export type { RegionMatch, RegionResult } from './region/lookup';
+export { smallTenantRegion } from './region/smallTenant';
+export type { SmallTenantRegion } from './region/smallTenant';
+export { evaluateRecovery } from './recovery';
+export type { RecoveryResult, RecoveryScenario } from './recovery';

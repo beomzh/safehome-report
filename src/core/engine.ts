@@ -1,5 +1,6 @@
 import type { RulesConfig } from './config';
 import { buildingUse } from './rules/building';
+import { recoverableDeposit } from './rules/recovery';
 import { taxChecklist } from './rules/checklist';
 import type { Rule } from './rules/helpers';
 import { ltvRatio, mortgageSum } from './rules/mortgage';
@@ -18,6 +19,7 @@ export const RULES: readonly Rule[] = [
   mortgageSum,
   ltvRatio,
   depositToMarketRatio,
+  recoverableDeposit,
   priorityDate,
   buildingUse,
   taxChecklist,
