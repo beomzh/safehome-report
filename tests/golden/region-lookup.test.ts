@@ -36,3 +36,36 @@ describe('findDongName', () => {
     expect(findDongName('경기도 수원시 장안구')).toBeUndefined();
   });
 });
+
+describe('2026-07-01 행정구역 개편 반영 (행정안전부 법정동코드 KIKcd_B.20260701)', () => {
+  it.each([
+    ['인천광역시 서해구 가정동', '28275'],
+    ['인천 검단구 당하동', '28290'],
+    ['인천광역시 제물포구 송월동1가', '28125'],
+    ['인천광역시 영종구 운서동', '28155'],
+    ['인천광역시 남동구 구월동', '28200'],
+    ['경기도 부천시 원미구 중동', '41192'],
+    ['경기도 화성시 동탄구 반송동', '41597'],
+    ['경기도 화성시 만세구 향남읍', '41591'],
+  ])('%s → %s', (addr, code) => {
+    expect(findSigungu(addr)).toMatchObject({ ok: true, match: { code } });
+  });
+
+  it('광주광역시·전라남도 표기는 전남광주통합특별시 코드(12xxx)로 찾는다', () => {
+    expect(findSigungu('광주광역시 북구 용봉동')).toMatchObject({ ok: true, match: { code: '12300' } });
+    expect(findSigungu('전남 순천시 연향동')).toMatchObject({ ok: true, match: { code: '12150' } });
+    expect(findSigungu('전남광주통합특별시 광산구 수완동')).toMatchObject({
+      ok: true,
+      match: { code: '12330' },
+    });
+  });
+
+  it('경기도 광주시는 광주광역시 표기와 헷갈리지 않는다', () => {
+    expect(findSigungu('경기도 광주시 오포읍')).toMatchObject({ ok: true, match: { code: '41610' } });
+  });
+
+  it('폐지된 옛 구(인천 서구·중구 등)는 찾지 않는다', () => {
+    expect(findSigungu('인천광역시 서구 가정동')).toEqual({ ok: false, reason: 'not_found' });
+    expect(findSigungu('인천광역시 동구 송림동')).toEqual({ ok: false, reason: 'not_found' });
+  });
+});

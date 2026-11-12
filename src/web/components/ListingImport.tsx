@@ -150,7 +150,7 @@ export function ListingImport({ setForm, setFin }: Props) {
       setRegionNote(
         region?.reason === 'ambiguous'
           ? '주소만으로 지역을 하나로 정할 수 없어 법정동코드를 직접 입력해야 합니다.'
-          : '이 주소의 법정동코드를 자동으로 찾지 못했습니다(2026년 행정구역 개편 지역 등). 시세 조회의 법정동코드를 직접 입력하세요.',
+          : '이 주소의 법정동코드를 자동으로 찾지 못했습니다(표에 없는 지역이거나 폐지된 옛 구 이름일 수 있습니다). 시세 조회의 법정동코드를 직접 입력하세요.',
       );
     else setRegionNote('주소가 없어 법정동코드를 직접 입력해야 합니다.');
     setForm((prev) => ({
