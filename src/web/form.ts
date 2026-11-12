@@ -35,6 +35,8 @@ export interface FormState {
   includeRegistry: boolean;
   /** 실거래가 조회용 입력 (매물 텍스트 추출 결과가 채운다) */
   lookupHousing: 'apt' | 'rowhouse' | 'officetel' | 'house';
+  /** 매물 주소 또는 지역 (입력하면 법정동코드·법정동명을 자동으로 찾는다) */
+  lookupAddress: string;
   lookupLawdCd: string;
   lookupAreaM2: string;
   lookupComplexName: string;
@@ -59,6 +61,7 @@ export const emptyForm = (): FormState => ({
   marketConfidence: 'high',
   includeRegistry: false,
   lookupHousing: 'apt',
+  lookupAddress: '',
   lookupLawdCd: '',
   lookupAreaM2: '',
   lookupComplexName: '',

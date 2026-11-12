@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
+import { findDongName, findSigungu } from '../../core';
 import type { FormState } from '../form';
 import { formatWon } from '../present';
 
@@ -35,6 +36,7 @@ export function MarketLookup({ form, setForm }: Props) {
   const areaM2 = form.lookupAreaM2;
   const complexName = form.lookupComplexName;
   const dongName = form.lookupDongName;
+  const address = form.lookupAddress;
   const [busy, setBusy] = useState(false);
   const [similar, setSimilar] = useState<NonNullable<LookupResponse['similar']>>([]);
   const [message, setMessage] = useState<{ tone: 'ok' | 'warn' | 'error'; text: string } | null>(null);
@@ -97,6 +99,18 @@ export function MarketLookup({ form, setForm }: Props) {
     if (form.lookupNonce > 0) void lookup();
   }, [form.lookupNonce]);
 
+  // 주소·지역을 적으면 법정동코드와 법정동명을 자동으로 채운다 (못 찾으면 직접 입력)
+  const region = address.trim() ? findSigungu(address) : null;
+  useEffect(() => {
+    if (!region?.ok) return;
+    const dong = findDongName(address);
+    setForm((f) =>
+      f.lookupLawdCd === region.match.code && (!dong || f.lookupDongName === dong)
+        ? f
+        : { ...f, lookupLawdCd: region.match.code, lookupDongName: dong ?? f.lookupDongName },
+    );
+  }, [address, region?.ok ? region.match.code : '']);
+
   return (
     <fieldset>
       <legend>실거래가로 시세 조회</legend>
@@ -113,6 +127,27 @@ export function MarketLookup({ form, setForm }: Props) {
           <option value="officetel">오피스텔</option>
           <option value="house">단독·다가구 (연면적 기준)</option>
         </select>
+      </label>
+      <label className="field">
+        <span>주소·지역 (적으면 법정동코드를 자동으로 찾음)</span>
+        <input
+          autoComplete="off"
+          placeholder="예: 서울 동대문구 휘경동 또는 매물 주소"
+          value={address}
+          onChange={(e) => setForm((f) => ({ ...f, lookupAddress: e.target.value }))}
+        />
+        {region?.ok && (
+          <small className="hint">
+            {region.match.name} ({region.match.code})로 인식했습니다.
+          </small>
+        )}
+        {region && !region.ok && (
+          <small className="hint">
+            {region.reason === 'ambiguous'
+              ? '시·도를 함께 적어 주세요 (같은 이름의 구가 여러 곳에 있습니다).'
+              : '법정동코드를 찾지 못했습니다. 시·도와 시·군·구를 적거나 아래 코드를 직접 입력하세요.'}
+          </small>
+        )}
       </label>
       <div className="row2">
         <label className="field">
