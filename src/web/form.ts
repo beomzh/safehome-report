@@ -1,4 +1,4 @@
-import type { EulEntry, GapEntry, GapEntryType, RiskInput } from '../core';
+import type { BuildingEntry, EulEntry, GapEntry, GapEntryType, RiskInput } from '../core';
 
 export type Kind = 'jeonse' | 'monthly' | 'sale';
 export type MarketSource = 'user' | 'trade_median' | 'official_price';
@@ -39,6 +39,10 @@ export interface FormState {
   lookupHousing: 'apt' | 'rowhouse' | 'officetel' | 'house';
   /** 매물 주소 또는 지역 (입력하면 법정동코드·법정동명을 자동으로 찾는다) */
   lookupAddress: string;
+  /** 건축물대장 조회용 지번 (본번-부번) */
+  buildingJibun: string;
+  /** 건축물대장에서 가져와 선택한 건물 (용도 룰 입력) */
+  buildingEntries: BuildingEntry[];
   lookupLawdCd: string;
   lookupAreaM2: string;
   lookupComplexName: string;
@@ -65,6 +69,8 @@ export const emptyForm = (): FormState => ({
   statedLoanManwon: '',
   lookupHousing: 'apt',
   lookupAddress: '',
+  buildingJibun: '',
+  buildingEntries: [],
   lookupLawdCd: '',
   lookupAreaM2: '',
   lookupComplexName: '',
@@ -211,6 +217,7 @@ export function buildRiskInput(form: FormState, asOf: string): BuildResult {
       registry,
       market,
       statedPriorLoan,
+      building: form.buildingEntries.length > 0 ? form.buildingEntries : undefined,
     },
   };
 }

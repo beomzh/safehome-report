@@ -22,6 +22,14 @@ interface ListingResponse {
   error?: string;
 }
 
+/** 주소에서 지번(예: 휘경동 123-4 → 123-4)을 읽는다. 도로명 건물번호(…로 12)는 읽지 않는다 */
+function jibunFromAddress(address: string | null): string | null {
+  const m = address
+    ? /[가-힣0-9]+(?:동|리|가)\s+(산?\s*\d{1,4}(?:-\d{1,4})?)(?![\d가-힣])/.exec(address)
+    : null;
+  return m ? (m[1] as string).replace(/\s+/g, '') : null;
+}
+
 const KIND_LABEL = { jeonse: '전세', monthly: '월세', sale: '매매' } as const;
 const HOUSING_LABEL = {
   apt: '아파트',
@@ -155,6 +163,7 @@ export function ListingImport({ setForm, setFin }: Props) {
           ? String(f.priorLoanManwon)
           : prev.statedLoanManwon,
       lookupAddress: f.address ?? prev.lookupAddress,
+      buildingJibun: jibunFromAddress(f.address) ?? prev.buildingJibun,
       lookupLawdCd: region?.ok ? region.match.code : prev.lookupLawdCd,
       // 단독·다가구는 건물명이 없어 법정동명을 건물명 칸에 쓴다
       lookupComplexName:
