@@ -65,8 +65,8 @@ export function FinanceFields({ fin, setFin, kind, amountManwon }: Props) {
             {text('existingAnnualDebtManwon', '기존 대출 연 원리금 상환액 (만원, 없으면 비움)', '예: 600')}
           </fieldset>
 
-          <fieldset>
-            <legend>대출 기준값 (필수)</legend>
+          <details className="fold">
+            <summary>대출 기준값 (예시 가정 적용됨 — 눌러서 수정)</summary>
             <button
               type="button"
               className="btn-link"
@@ -99,10 +99,10 @@ export function FinanceFields({ fin, setFin, kind, amountManwon }: Props) {
               담보가치는 {isSale ? '매매가와 입력한 시세 중 낮은 값' : '보증금'}으로 계산합니다.
               {isSale && ' 매도인의 기존 근저당은 잔금 때 말소된다고 보고 한도에서 차감하지 않습니다.'}
             </p>
-          </fieldset>
+          </details>
 
-          <fieldset>
-            <legend>세금·수수료 (취득세·중개보수)</legend>
+          <details className="fold">
+            <summary>세금·수수료 (취득세·중개보수 — 눌러서 수정)</summary>
             <label className="check">
               <input
                 type="checkbox"
@@ -147,7 +147,7 @@ export function FinanceFields({ fin, setFin, kind, amountManwon }: Props) {
               {text('otherCostsManwon', '이사·수리 등 기타 (만원)', '예: 300')}
             </div>
             {text('downPaymentPercent', '계약금 비율 (%, 시점별 현금 계산용)', '예: 10')}
-          </fieldset>
+          </details>
         </div>
       )}
     </>

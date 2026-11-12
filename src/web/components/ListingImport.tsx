@@ -143,6 +143,7 @@ export function ListingImport({ setForm }: Props) {
       kind: f.kind ?? prev.kind,
       amountManwon: f.amountManwon !== null ? String(f.amountManwon) : prev.amountManwon,
       lookupHousing: f.housingType ?? prev.lookupHousing,
+      lookupAddress: f.address ?? prev.lookupAddress,
       lookupLawdCd: region?.ok ? region.match.code : prev.lookupLawdCd,
       // 단독·다가구는 건물명이 없어 법정동명을 건물명 칸에 쓴다
       lookupComplexName:
