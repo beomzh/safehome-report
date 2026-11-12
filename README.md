@@ -139,9 +139,10 @@ npm run dev
 ## 개발
 
 ```bash
-npm run check          # 타입 검사 + 린트 + 테스트 (249개)
+npm run check          # 타입 검사 + 린트 + 테스트 (497개)
 npm run build          # 프로덕션 빌드
 npm run format:check   # 포맷 검사
+npm run rates:check    # 대출 금리가 공식 사이트 현재 값과 같은지 점검(읽기 전용)
 ```
 
 위험 판정 규칙은 `src/core`(순수 함수), 화면은 `src/web`·`src/app`, 외부 호출은 `src/adapters` 에 있습니다. 구조와 설계 결정은 [아키텍처](docs/architecture.md)와 [ADR](docs/adr/)에, 기여·커밋·릴리즈 규칙은 [CONTRIBUTING](CONTRIBUTING.md)에 있습니다.
