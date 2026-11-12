@@ -2,7 +2,7 @@
  * 사이트 보기 패널. 일부 사이트는 다른 페이지 안에 넣는 것(iframe)을 헤더로 막는다.
  * 2026-11-12 응답 헤더 확인: 네이버 부동산(land·fin·m.land)과 호갱노노는 X-Frame-Options: SAMEORIGIN 으로 막고,
  * KB부동산·다방·피터팬은 해당 헤더가 없다. 직방은 자동 요청에 403 을 돌려줘 확인하지 못했다.
- * 막힌 사이트는 화면 안에 넣지 않고 작은 팝업 창으로 연다.
+ * 막힌 사이트는 사이드바에 안내와 "새 창" 버튼만 보여준다.
  */
 export const VIEWER_EVENT = 'safehome:view-site';
 
@@ -30,14 +30,10 @@ export function canFrame(url: string): boolean {
   }
 }
 
-/** 어디서든 호출: 사이트 보기 패널(또는 팝업)로 연다 */
+/** 어디서든 호출: 사이드바 패널에 연다. 올바른 http(s) 주소가 아니면 false */
 export function openSiteViewer(rawUrl: string): boolean {
   const url = normalizeViewUrl(rawUrl);
   if (!url) return false;
-  if (!canFrame(url)) {
-    window.open(url, 'safehome-site', 'popup=yes,width=1100,height=800,noopener,noreferrer');
-    return true;
-  }
   window.dispatchEvent(new CustomEvent(VIEWER_EVENT, { detail: url }));
   return true;
 }

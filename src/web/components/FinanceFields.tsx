@@ -50,7 +50,8 @@ export function FinanceFields({ fin, setFin, kind, amountManwon }: Props) {
       </label>
       <p className="hint">
         입력한 재무 정보는 이 브라우저 안에서만 계산되며 저장·전송되지 않습니다. 대출·세금 기준값은 규제와
-        금융기관마다 달라 앱이 기본값을 제공하지 않으니, 금융기관·공식 안내의 값을 직접 입력하세요.
+        금융기관마다 달라, 처음에는 예시 가정(LTV 70·DSR 40·금리 4%·30년)을 채워 두었습니다. 공식 값이 아니니
+        금융기관·공식 안내의 값으로 바꾸세요.
       </p>
 
       {fin.enabled && (

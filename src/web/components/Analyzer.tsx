@@ -5,7 +5,7 @@ import { evaluateAffordability, evaluateRequirements, evaluateRisk, evaluateVerd
 import type { Affordability, Requirements, RiskInput, RiskReport, VerdictResult } from '../../core';
 import { buildRiskInput, emptyForm, todayIso } from '../form';
 import type { FormState } from '../form';
-import { buildFinancePlan, emptyFinanceForm } from '../financeForm';
+import { buildFinancePlan, defaultFinanceForm } from '../financeForm';
 import type { FinanceFormState } from '../financeForm';
 import { gradeInfo } from '../present';
 import { rulesConfig } from '../rulesConfig';
@@ -34,7 +34,7 @@ interface Result {
 
 export function Analyzer() {
   const [form, setForm] = useState<FormState>(emptyForm);
-  const [fin, setFin] = useState<FinanceFormState>(emptyFinanceForm);
+  const [fin, setFin] = useState<FinanceFormState>(defaultFinanceForm);
   const [errors, setErrors] = useState<string[]>([]);
   const [result, setResult] = useState<Result | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -55,6 +55,7 @@ export function Analyzer() {
           kind: built.input.contract.kind,
           amountWon: built.input.contract.amount,
           marketWon: built.input.market?.estimatedValue,
+          housing: form.lookupHousing,
           areaM2: /^\d+(\.\d+)?$/.test(form.lookupAreaM2.trim()) ? Number(form.lookupAreaM2) : undefined,
         },
         rulesConfig,
@@ -103,7 +104,7 @@ export function Analyzer() {
 
   const reset = () => {
     setForm(emptyForm());
-    setFin(emptyFinanceForm());
+    setFin(defaultFinanceForm());
     setErrors([]);
     setResult(null);
     setDialogOpen(false);

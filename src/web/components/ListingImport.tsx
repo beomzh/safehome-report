@@ -73,6 +73,13 @@ export function ListingImport({ setForm }: Props) {
 
   addRef.current = addFiles;
 
+  // 올바른 링크가 입력되면 잠시 뒤 사이드바로 보여준다
+  useEffect(() => {
+    if (!url.trim()) return;
+    const t = setTimeout(() => openSiteViewer(url), 600);
+    return () => clearTimeout(t);
+  }, [url]);
+
   // 캡처를 클립보드에 복사한 뒤 이 화면 어디서든 붙여넣기(Ctrl/Cmd+V) 하면 이미지가 들어간다
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
@@ -163,35 +170,22 @@ export function ListingImport({ setForm }: Props) {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
         />
+        <small className="hint">링크를 넣으면 오른쪽 사이드바에서 사이트를 볼 수 있습니다.</small>
       </label>
-      <button
-        type="button"
-        className="btn-secondary"
-        onClick={() => url.trim() && openSiteViewer(url)}
-        disabled={!url.trim()}
-      >
-        이 링크를 화면에서 보기
-      </button>
       <label className="field">
-        <span>매물 설명 붙여넣기</span>
+        <span>매물 설명 붙여넣기 (캡처 이미지도 붙여넣을 수 있음)</span>
         <textarea
           rows={5}
-          placeholder="매물 화면의 가격·면적·층·특이사항 등을 복사해 붙여넣으세요"
+          placeholder="매물 화면의 가격·면적·층 등을 복사해 붙여넣거나, 화면 캡처(Ctrl/⌘+V)를 그대로 붙여넣으세요 (최대 4장)"
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
       </label>
-      <div className="field">
-        <span>매물 화면 캡처 (선택, 최대 {MAX_ATTACH_IMAGES}장)</span>
+      {images.length > 0 && (
         <div className="attach-row">
-          <div className="paste-zone" tabIndex={0} role="group" aria-label="캡처 붙여넣기 영역">
-            {images.length === 0
-              ? '캡처를 복사한 뒤 여기를 클릭하고 Ctrl/⌘+V'
-              : `캡처 ${images.length}장 — 더 붙여넣을 수 있습니다`}
-          </div>
           {images.map((src, i) => (
             <span key={src.slice(-40) + i} className="attach-thumb">
-              <img src={src} alt={`첨부 캡처 ${i + 1}`} />
+              <img src={src} alt={`붙여넣은 캡처 ${i + 1}`} />
               <button
                 type="button"
                 className="btn-secondary"
@@ -203,11 +197,7 @@ export function ListingImport({ setForm }: Props) {
             </span>
           ))}
         </div>
-        <span className="hint">
-          macOS는 Ctrl+Cmd+Shift+4, Windows는 Win+Shift+S 로 영역을 캡처하면 클립보드에 복사됩니다. 이 화면
-          어디서든 Ctrl/⌘+V 로 붙여넣으면 들어갑니다(드래그가 안 되는 사이트도 가능).
-        </span>
-      </div>
+      )}
       <button type="button" className="btn-secondary" onClick={extract} disabled={busy}>
         {busy ? '추출 중…' : 'AI로 항목 추출'}
       </button>
