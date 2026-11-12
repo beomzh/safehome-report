@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { parseRegistryText } from '../../core';
 import type { FormState } from '../form';
+import { extractPdfText, PDF_ERROR_TEXT } from '../pdfText';
 import { registryToForm } from '../registryImport';
 
 interface Props {
@@ -17,10 +18,12 @@ export function RegistryImport({ setForm }: Props) {
   const [error, setError] = useState('');
   const [done, setDone] = useState('');
 
-  const run = () => {
+  const [busy, setBusy] = useState(false);
+
+  const run = (source: string = text) => {
     setError('');
     setDone('');
-    const r = parseRegistryText(text);
+    const r = parseRegistryText(source);
     if (!r.ok || !r.facts) {
       setNotes([]);
       setError(r.error ?? '분석하지 못했습니다.');
@@ -35,8 +38,42 @@ export function RegistryImport({ setForm }: Props) {
     );
   };
 
+  const onPdf = async (file: File | undefined) => {
+    if (!file) return;
+    setError('');
+    setDone('');
+    setNotes([]);
+    setBusy(true);
+    try {
+      const res = await extractPdfText(await file.arrayBuffer());
+      if (!res.ok) {
+        setError(PDF_ERROR_TEXT[res.reason]);
+        return;
+      }
+      run(res.text);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="registry-import">
+      <label className="field">
+        <span>등기사항전부증명서 PDF 파일 (말소사항 포함 열람·발급본)</span>
+        <input
+          type="file"
+          accept="application/pdf,.pdf"
+          disabled={busy}
+          onChange={(e) => {
+            void onPdf(e.target.files?.[0]);
+            e.target.value = '';
+          }}
+        />
+        <small className="hint">
+          PDF 는 이 브라우저 안에서만 읽고 서버로 보내지 않습니다. 텍스트가 들어 있는 PDF 만 읽을 수 있습니다.
+        </small>
+      </label>
+      {busy && <p className="hint">PDF 를 읽는 중…</p>}
       <label className="field">
         <span>등기사항전부증명서 텍스트 붙여넣기 (PDF를 열어 전체 선택 → 복사)</span>
         <textarea
@@ -47,7 +84,7 @@ export function RegistryImport({ setForm }: Props) {
         />
       </label>
       <div className="actions">
-        <button type="button" className="btn-secondary" onClick={run} disabled={!text.trim()}>
+        <button type="button" className="btn-secondary" onClick={() => run()} disabled={!text.trim()}>
           붙여넣은 내용으로 입력칸 채우기
         </button>
       </div>
@@ -65,8 +102,8 @@ export function RegistryImport({ setForm }: Props) {
         </ul>
       )}
       <p className="hint">
-        실제 문서로 검증이 끝나지 않은 기능입니다. 취소선으로만 표시된 말소 항목은 텍스트로 구분할 수 없어
-        미말소로 읽힐 수 있으니, “말소사항 포함” 열람본이거나 원문과 직접 대조하세요.
+        공개된 실제 열람본 2건으로만 확인한 기능입니다. 취소선으로만 표시된 말소 항목은 텍스트로 구분할 수
+        없어 미말소로 읽힐 수 있으니, “말소사항 포함” 열람본이거나 원문과 직접 대조하세요.
       </p>
     </div>
   );
