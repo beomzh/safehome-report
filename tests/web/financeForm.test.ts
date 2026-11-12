@@ -137,12 +137,15 @@ describe('buildFinancePlan — 자산·소득 없이도 필요 조건 계산', (
     expect(r.ok && r.affordability?.profile.annualIncome).toBe(60_000_000);
   });
 
-  it('둘 중 하나만 입력하면 오류로 안내한다', () => {
+  it('둘 중 하나만 입력해도 오류 없이 필요 조건만 계산하고 이유를 알린다 (연소득은 대출 추천용으로 따로 입력)', () => {
     const onlyAssets = buildFinancePlan(noProfile({ assetsManwon: '20,000' }), sale);
     const onlyIncome = buildFinancePlan(noProfile({ annualIncomeManwon: '6,000' }), sale);
     for (const r of [onlyAssets, onlyIncome]) {
-      expect(r.ok).toBe(false);
-      if (!r.ok) expect(r.errors.join(' ')).toContain('둘 다 입력하거나 둘 다 비워');
+      expect(r.ok).toBe(true);
+      if (r.ok) {
+        expect(r.affordability).toBeUndefined();
+        expect(r.assumptionNotes.join(' ')).toContain('둘 다 입력해야');
+      }
     }
   });
 

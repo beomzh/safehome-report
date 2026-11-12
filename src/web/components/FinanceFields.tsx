@@ -14,11 +14,13 @@ interface Props {
   amountManwon: string;
   /** 시세 조회의 주소·지역 (AI 기준값 제안의 지역 자동 입력용) */
   address: string;
+  /** "내 상황"의 생애최초 여부 — AI 기준값 제안의 기본값 */
+  firstHome: boolean;
 }
 
 type TextKey = Exclude<keyof FinanceFormState, 'enabled' | 'autoCosts' | 'aiFields' | 'singleHome'>;
 
-export function FinanceFields({ fin, setFin, kind, amountManwon, address }: Props) {
+export function FinanceFields({ fin, setFin, kind, amountManwon, address, firstHome }: Props) {
   const isSale = kind === 'sale';
   const isJeonse = kind === 'jeonse';
 
@@ -60,13 +62,19 @@ export function FinanceFields({ fin, setFin, kind, amountManwon, address }: Prop
         <div className="registry">
           <details className="fold">
             <summary>AI로 기준값 제안받기 (선택)</summary>
-            <AssumptionAdvisor setFin={setFin} kind={kind} amountManwon={amountManwon} address={address} />
+            <AssumptionAdvisor
+              setFin={setFin}
+              kind={kind}
+              amountManwon={amountManwon}
+              address={address}
+              firstHomeDefault={firstHome}
+            />
           </details>
 
           <fieldset>
             <legend>내 재무 정보 (선택 — 비우면 "필요 조건"만 계산)</legend>
             {text('assetsManwon', '보유 자산·자기자금 (만원, 선택)', '예: 20,000')}
-            {text('annualIncomeManwon', '연소득 (만원, 선택)', '예: 6,000')}
+            <p className="hint">연소득은 맨 위 "내 상황"에 입력한 값을 씁니다.</p>
             {text('existingAnnualDebtManwon', '기존 대출 연 원리금 상환액 (만원, 없으면 비움)', '예: 600')}
           </fieldset>
 

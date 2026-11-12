@@ -1,0 +1,158 @@
+{
+  "checkedAt": "2026-11-12",
+  "note": "주택도시기금 공식 상품 안내 페이지의 대출대상·대상주택 요건. 순자산 기준(소득 3·4분위 평균)은 통계청 발표에 따라 해마다 바뀐다.",
+  "products": [
+    {
+      "productId": "buteommok",
+      "kind": "jeonse",
+      "requireHomeless": true,
+      "requireHead": true,
+      "incomeLimits": [
+        { "when": "always", "maxWon": 50000000 },
+        { "when": "twoChildren", "maxWon": 60000000 },
+        { "when": "newlywed", "maxWon": 75000000 }
+      ],
+      "netAssetMaxWon": 345000000,
+      "dealCaps": [
+        { "when": "always", "capitalWon": 300000000, "otherWon": 200000000 },
+        { "when": "newlywed", "capitalWon": 400000000, "otherWon": 300000000 },
+        { "when": "twoChildren", "capitalWon": 400000000, "otherWon": 300000000 }
+      ],
+      "areaMaxM2": 85,
+      "source": {
+        "name": "주택도시기금 — 버팀목전세자금 대출안내",
+        "url": "https://nhuf.molit.go.kr/FP/FP05/FP0502/FP05020101.jsp",
+        "checkedAt": "2026-11-12"
+      }
+    },
+    {
+      "productId": "youth-buteommok",
+      "kind": "jeonse",
+      "requireHomeless": true,
+      "requireHead": true,
+      "incomeLimits": [{ "when": "always", "maxWon": 50000000 }],
+      "netAssetMaxWon": 345000000,
+      "age": { "min": 19, "max": 34 },
+      "dealCaps": [{ "when": "always", "capitalWon": 300000000, "otherWon": 300000000 }],
+      "areaMaxM2": 85,
+      "source": {
+        "name": "주택도시기금 — 청년전용 버팀목전세자금 대출안내",
+        "url": "https://nhuf.molit.go.kr/FP/FP05/FP0502/FP05020301.jsp",
+        "checkedAt": "2026-11-12"
+      }
+    },
+    {
+      "productId": "newlywed-jeonse",
+      "kind": "jeonse",
+      "requireHomeless": true,
+      "requireHead": true,
+      "requireNewlywed": true,
+      "incomeLimits": [{ "when": "always", "maxWon": 75000000 }],
+      "singleEarnerExceptionWon": 50000000,
+      "netAssetMaxWon": 345000000,
+      "dealCaps": [{ "when": "always", "capitalWon": 400000000, "otherWon": 300000000 }],
+      "areaMaxM2": 85,
+      "source": {
+        "name": "주택도시기금 — 신혼부부전용 전세자금 대출안내",
+        "url": "https://nhuf.molit.go.kr/FP/FP05/FP0502/FP05020401.jsp",
+        "checkedAt": "2026-11-12"
+      }
+    },
+    {
+      "productId": "newborn-buteommok",
+      "kind": "jeonse",
+      "requireHomeless": true,
+      "requireHead": true,
+      "requireNewborn": true,
+      "incomeLimits": [
+        { "when": "always", "maxWon": 130000000 },
+        { "when": "dualIncome", "maxWon": 200000000 }
+      ],
+      "netAssetMaxWon": 345000000,
+      "dealCaps": [{ "when": "always", "capitalWon": 500000000, "otherWon": 400000000 }],
+      "areaMaxM2": 85,
+      "source": {
+        "name": "주택도시기금 — 신생아 특례 버팀목대출 대출안내",
+        "url": "https://nhuf.molit.go.kr/FP/FP05/FP0502/FP05021401.jsp",
+        "checkedAt": "2026-11-12"
+      }
+    },
+    {
+      "productId": "housing-stable-wolse",
+      "kind": "monthly",
+      "requireHomeless": false,
+      "requireHead": false,
+      "incomeLimits": [{ "when": "always", "maxWon": 50000000 }],
+      "netAssetMaxWon": 345000000,
+      "dealCaps": [{ "when": "always", "capitalWon": 100000000, "otherWon": 100000000 }],
+      "monthlyRentMaxWon": 600000,
+      "areaMaxM2": 85,
+      "source": {
+        "name": "주택도시기금 — 주거안정월세대출 대출안내",
+        "url": "https://nhuf.molit.go.kr/FP/FP05/FP0502/FP05020201.jsp",
+        "checkedAt": "2026-11-12"
+      }
+    },
+    {
+      "productId": "youth-wolse",
+      "kind": "monthly",
+      "requireHomeless": true,
+      "requireHead": true,
+      "incomeLimits": [{ "when": "always", "maxWon": 50000000 }],
+      "netAssetMaxWon": 345000000,
+      "age": { "min": 19, "max": 34 },
+      "dealCaps": [{ "when": "always", "capitalWon": 65000000, "otherWon": 65000000 }],
+      "monthlyRentMaxWon": 700000,
+      "areaMaxM2": 60,
+      "source": {
+        "name": "주택도시기금 — 청년전용 보증부월세대출 대출안내",
+        "url": "https://nhuf.molit.go.kr/FP/FP05/FP0502/FP05020701.jsp",
+        "checkedAt": "2026-11-12"
+      }
+    },
+    {
+      "productId": "didimdol",
+      "kind": "sale",
+      "requireHomeless": true,
+      "requireHead": true,
+      "incomeLimits": [
+        { "when": "always", "maxWon": 60000000 },
+        { "when": "firstHome", "maxWon": 70000000 },
+        { "when": "twoChildren", "maxWon": 70000000 },
+        { "when": "newlywed", "maxWon": 85000000 }
+      ],
+      "singleEarnerExceptionWon": 60000000,
+      "netAssetMaxWon": 511000000,
+      "dealCaps": [
+        { "when": "always", "capitalWon": 500000000, "otherWon": 500000000 },
+        { "when": "newlywed", "capitalWon": 600000000, "otherWon": 600000000 },
+        { "when": "twoChildren", "capitalWon": 600000000, "otherWon": 600000000 }
+      ],
+      "areaMaxM2": 85,
+      "source": {
+        "name": "주택도시기금 — 내집마련 디딤돌대출 대출안내",
+        "url": "https://nhuf.molit.go.kr/FP/FP05/FP0503/FP05030101.jsp",
+        "checkedAt": "2026-11-12"
+      }
+    },
+    {
+      "productId": "newborn-didimdol",
+      "kind": "sale",
+      "requireHomeless": true,
+      "requireHead": true,
+      "requireNewborn": true,
+      "incomeLimits": [
+        { "when": "always", "maxWon": 130000000 },
+        { "when": "dualIncome", "maxWon": 200000000 }
+      ],
+      "netAssetMaxWon": 511000000,
+      "dealCaps": [{ "when": "always", "capitalWon": 900000000, "otherWon": 900000000 }],
+      "areaMaxM2": 85,
+      "source": {
+        "name": "주택도시기금 — 신생아 특례 디딤돌대출 대출안내",
+        "url": "https://nhuf.molit.go.kr/FP/FP05/FP0503/FP05030801.jsp",
+        "checkedAt": "2026-11-12"
+      }
+    }
+  ]
+}

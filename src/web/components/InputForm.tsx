@@ -17,6 +17,8 @@ interface Props {
   marketSlot?: ReactNode;
   /** 폼 맨 위에 렌더링할 섹션 (매물 설명 붙여넣기 등) */
   topSlot?: ReactNode;
+  /** 그 위에 렌더링할 "내 상황"(소득·가구 정보) 입력 */
+  profileSlot?: ReactNode;
 }
 
 function Section({ title, open, children }: { title: string; open?: boolean; children: ReactNode }) {
@@ -30,7 +32,17 @@ function Section({ title, open, children }: { title: string; open?: boolean; chi
 
 const KIND_LABEL: Record<Kind, string> = { jeonse: '전세', monthly: '월세', sale: '매매' };
 
-export function InputForm({ form, setForm, errors, onSubmit, onReset, extra, marketSlot, topSlot }: Props) {
+export function InputForm({
+  form,
+  setForm,
+  errors,
+  onSubmit,
+  onReset,
+  extra,
+  marketSlot,
+  topSlot,
+  profileSlot,
+}: Props) {
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
   const isSale = form.kind === 'sale';
@@ -44,6 +56,12 @@ export function InputForm({ form, setForm, errors, onSubmit, onReset, extra, mar
     <form className="card form" onSubmit={submit} noValidate>
       <div className="form-cols">
         <div className="col">
+          {profileSlot && (
+            <Section title="내 상황 — 대출 추천용 (소득·가구, 선택)" open>
+              {profileSlot}
+            </Section>
+          )}
+
           <Section title="0. 매물 설명·캡처로 자동 채우기 (AI, 선택)" open>
             {topSlot}
           </Section>
