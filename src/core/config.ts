@@ -47,6 +47,8 @@ export const rulesConfigSchema = z.object({
     minSamples: z.number().int().positive(),
     /** 목표 전용면적 ± 이 값(㎡) 안의 거래만 사용 */
     areaToleranceM2: z.number().nonnegative(),
+    /** 전월세 시세에 쓰는 최근 N개월 (월세 거래가 많아 매매보다 짧게) */
+    rentWindowMonths: z.number().int().positive(),
   }),
   /** 주택 유상취득 취득세 표준세율과 부가세 (지방세법 제11조 제1항 제8호). 중과는 계산하지 않는다 */
   acquisitionTax: sourcedSchema.extend({

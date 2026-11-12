@@ -40,7 +40,12 @@ export function Analyzer() {
   const [errors, setErrors] = useState<string[]>([]);
   const [result, setResult] = useState<Result | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [lookupInfo, setLookupInfo] = useState<LookupInfo>({ similar: [], message: null });
+  const [lookupInfo, setLookupInfo] = useState<LookupInfo>({
+    similar: [],
+    message: null,
+    rent: null,
+    kind: 'jeonse',
+  });
 
   const analyze = () => {
     const built = buildRiskInput(form, todayIso());

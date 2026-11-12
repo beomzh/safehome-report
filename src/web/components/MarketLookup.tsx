@@ -5,10 +5,20 @@ import type { Dispatch, SetStateAction } from 'react';
 import { findDongName, findSigungu } from '../../core';
 import type { FormState } from '../form';
 import { formatWon } from '../present';
+import { RentSummary } from './RentSummary';
+import type { RentInfo, RentState } from './RentSummary';
+import { SimilarList } from './SimilarList';
+import { parseManwon } from '../form';
 
 export interface LookupInfo {
   similar: NonNullable<LookupResponse['similar']>;
   message: { tone: 'ok' | 'warn' | 'error'; text: string } | null;
+  rent: RentState | null;
+  /** 같은 조건 매매 시세 중앙값 (원) */
+  saleWon?: number;
+  kind: FormState['kind'];
+  /** 입력한 보증금 (원) */
+  depositWon?: number;
 }
 
 interface Props {
@@ -47,8 +57,30 @@ export function MarketLookup({ form, setForm, onInfo }: Props) {
   const [busy, setBusy] = useState(false);
   const [similar, setSimilar] = useState<NonNullable<LookupResponse['similar']>>([]);
   const [message, setMessage] = useState<{ tone: 'ok' | 'warn' | 'error'; text: string } | null>(null);
+  const [rent, setRent] = useState<RentState | null>(null);
+  const [saleWon, setSaleWon] = useState<number | undefined>(undefined);
+
+  /** 매매 시세 조회가 성공하면 같은 조건으로 전월세 거래도 조회한다 (참고용) */
+  const loadRent = async (qs: URLSearchParams) => {
+    setRent({ status: 'loading' });
+    try {
+      const res = await fetch(`/api/rent?${qs.toString()}`);
+      const data = (await res.json()) as Partial<RentInfo> & { error?: string };
+      if (!res.ok) setRent({ status: 'error', message: data.error ?? '전월세 조회에 실패했습니다.' });
+      else
+        setRent({
+          status: 'ok',
+          jeonse: data.jeonse ?? null,
+          monthly: data.monthly ?? null,
+          windowMonths: data.windowMonths ?? 6,
+        });
+    } catch {
+      setRent({ status: 'error', message: '서버에 연결하지 못했습니다.' });
+    }
+  };
 
   const lookup = async () => {
+    setRent(null);
     setBusy(true);
     setMessage(null);
     try {
@@ -56,6 +88,8 @@ export function MarketLookup({ form, setForm, onInfo }: Props) {
       const res = await fetch(`/api/market?${qs.toString()}`);
       const data = (await res.json()) as LookupResponse;
       setSimilar(res.ok ? (data.similar ?? []) : []);
+      setSaleWon(res.ok ? data.market?.estimatedValue : undefined);
+      if (res.ok) void loadRent(qs);
       if (!res.ok) {
         setMessage({ tone: 'error', text: data.error ?? '조회에 실패했습니다.' });
         return;
@@ -102,8 +136,16 @@ export function MarketLookup({ form, setForm, onInfo }: Props) {
   };
 
   useEffect(() => {
-    onInfo?.({ similar, message });
-  }, [similar, message]);
+    const dep = parseManwon(form.amountManwon);
+    onInfo?.({
+      similar,
+      message,
+      rent,
+      saleWon,
+      kind: form.kind,
+      depositWon: dep.ok && dep.won > 0 ? dep.won : undefined,
+    });
+  }, [similar, message, rent, saleWon, form.kind, form.amountManwon]);
 
   // 매물 설명을 적용하면 필요한 값이 채워진 상태에서 시세 조회를 자동 실행한다
   useEffect(() => {
@@ -214,21 +256,23 @@ export function MarketLookup({ form, setForm, onInfo }: Props) {
       {similar.length > 0 && (
         <div className="similar">
           <h4>같은 지역에서 비슷한 면적으로 거래된 다른 단지 (참고)</h4>
-          <ul className="evidence">
-            {similar.map((c) => (
-              <li key={c.complexName}>
-                {c.complexName}: 중앙값 {formatWon(c.medianWon)} ({c.count}건
-                {c.diffPercent !== undefined &&
-                  `, 조회 시세 대비 ${c.diffPercent > 0 ? '+' : ''}${c.diffPercent}%`}
-                )
-              </li>
-            ))}
-          </ul>
+          <SimilarList similar={similar} />
           <p className="hint">
             판매 중인 매물이 아니라 최근 실제 거래 사례입니다. 대안 단지를 찾는 출발점으로만 쓰고, 지금 나온
             매물은 위의 매물 사이트에서 확인하세요.
           </p>
         </div>
+      )}
+      {rent && (
+        <RentSummary
+          rent={rent}
+          saleWon={saleWon}
+          kind={form.kind}
+          depositWon={(() => {
+            const d = parseManwon(form.amountManwon);
+            return d.ok && d.won > 0 ? d.won : undefined;
+          })()}
+        />
       )}
       {message && (
         <p className={message.tone === 'error' ? 'errors' : 'notice'} role="status">

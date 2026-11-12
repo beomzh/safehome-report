@@ -8,6 +8,8 @@ export type HousingType = (typeof HOUSING_TYPES)[number];
 export interface HousingSpec {
   label: string;
   endpoint: string;
+  /** 전월세 실거래 API (2026-11-12 실제 응답으로 확인) */
+  rentEndpoint: string;
   /** 단지(건물)명을 담은 응답 태그. 단독·다가구는 건물명이 없어 법정동명(umdNm)을 쓴다 */
   nameTag: string;
   /** 면적을 담은 응답 태그 (단독·다가구는 전용면적이 없어 연면적) */
@@ -28,6 +30,7 @@ export const HOUSING: Record<HousingType, HousingSpec> = {
   apt: {
     label: '아파트',
     endpoint: `${BASE}/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev`,
+    rentEndpoint: `${BASE}/RTMSDataSvcAptRent/getRTMSDataSvcAptRent`,
     nameTag: 'aptNm',
     areaTag: 'excluUseAr',
     supportsSimilar: true,
@@ -37,6 +40,7 @@ export const HOUSING: Record<HousingType, HousingSpec> = {
   rowhouse: {
     label: '연립·다세대(빌라)',
     endpoint: `${BASE}/RTMSDataSvcRHTrade2/getRTMSDataSvcRHTrade2`,
+    rentEndpoint: `${BASE}/RTMSDataSvcRHRent/getRTMSDataSvcRHRent`,
     nameTag: 'mhouseNm',
     areaTag: 'excluUseAr',
     supportsSimilar: true,
@@ -46,6 +50,7 @@ export const HOUSING: Record<HousingType, HousingSpec> = {
   officetel: {
     label: '오피스텔',
     endpoint: `${BASE}/RTMSDataSvcOffiTrade/getRTMSDataSvcOffiTrade`,
+    rentEndpoint: `${BASE}/RTMSDataSvcOffiRent/getRTMSDataSvcOffiRent`,
     nameTag: 'offiNm',
     areaTag: 'excluUseAr',
     supportsSimilar: true,
@@ -55,6 +60,7 @@ export const HOUSING: Record<HousingType, HousingSpec> = {
   house: {
     label: '단독·다가구',
     endpoint: `${BASE}/RTMSDataSvcSHTrade/getRTMSDataSvcSHTrade`,
+    rentEndpoint: `${BASE}/RTMSDataSvcSHRent/getRTMSDataSvcSHRent`,
     nameTag: 'umdNm',
     areaTag: 'totalFloorAr',
     areaToleranceRatio: 0.2,
