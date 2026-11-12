@@ -13,6 +13,25 @@ const base = (over: Partial<FormState> = {}): FormState => ({
   ...over,
 });
 
+describe('융자금 입력', () => {
+  const f = (over: Record<string, unknown>) => ({
+    ...emptyForm(),
+    amountManwon: '50000',
+    ...over,
+  });
+  it('전세에서 입력한 융자금은 원 단위로 전달된다', () => {
+    const r = buildRiskInput(f({ statedLoanManwon: '20,000' }), '2026-11-12');
+    expect(r.ok && r.input.statedPriorLoan).toBe(200_000_000);
+  });
+  it('비우면 undefined, 잘못된 값은 오류, 매매에는 쓰지 않는다', () => {
+    const empty = buildRiskInput(f({}), '2026-11-12');
+    expect(empty.ok && empty.input.statedPriorLoan).toBeUndefined();
+    expect(buildRiskInput(f({ statedLoanManwon: 'abc' }), '2026-11-12').ok).toBe(false);
+    const sale = buildRiskInput(f({ kind: 'sale', statedLoanManwon: '20000' }), '2026-11-12');
+    expect(sale.ok && sale.input.statedPriorLoan).toBeUndefined();
+  });
+});
+
 describe('parseManwon', () => {
   it.each([
     ['35000', 350_000_000],

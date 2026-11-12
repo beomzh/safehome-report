@@ -89,6 +89,22 @@ export function InputForm({ form, setForm, errors, onSubmit, onReset, extra, mar
           </label>
 
           {!isSale && (
+            <label className="field">
+              <span>매물 설명의 융자금 (만원, 선택)</span>
+              <input
+                inputMode="numeric"
+                placeholder="없으면 비움 · 예: 20,000"
+                value={form.statedLoanManwon}
+                onChange={(e) => set('statedLoanManwon', e.target.value)}
+              />
+              <small className="hint">
+                광고에 적힌 값으로 등기부로 확인되지 않습니다. 등기부를 입력하지 않았을 때의 사전 점검에만
+                더해집니다.
+              </small>
+            </label>
+          )}
+
+          {!isSale && (
             <div className="row2">
               <label className="field">
                 <span>전입(예정)일</span>
