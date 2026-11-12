@@ -46,6 +46,30 @@
 - 따라서 응답 필드는 실제로 확인하지 못했다. 앱은 연립다세대 `mhouseNm`, 오피스텔 `offiNm` 을 건물명으로, 나머지(`dealAmount`, `excluUseAr`, `dealYear/Month/Day`, `cdealType`)는 아파트와 같다고 가정해 읽는다. 이 가정이 틀리면 항목이 건너뛰어져 "조건에 맞는 거래 없음"으로 나타난다.
 - 활용신청을 하면 실제 응답으로 `src/adapters/public-data/housing.ts` 의 `verified` 를 올리고 `tests/fixtures/public-data/` 에 샘플을 추가한다.
 
+## 전월세 API 4종 (2026-11-12 실제 호출, 강남구 11680 · 2025-10)
+
+현재 키로 네 곳 모두 HTTP 200, `resultCode 000`. 요청 변수는 매매와 같다(`LAWD_CD`, `DEAL_YMD`, `serviceKey`, `pageNo`, `numOfRows`). 응답에 키는 포함되지 않았다. 샘플은 `tests/fixtures/public-data/*-rent-11680-202510.xml`.
+
+| 유형       | 엔드포인트 (`/1613000/`)                     | 건수(totalCount) | 이름 필드  | 면적 필드                           |
+| ---------- | -------------------------------------------- | ---------------- | ---------- | ----------------------------------- |
+| 아파트     | `RTMSDataSvcAptRent/getRTMSDataSvcAptRent`   | 2,073 (2025-10)  | `aptNm`    | `excluUseAr` (전용)                 |
+| 오피스텔   | `RTMSDataSvcOffiRent/getRTMSDataSvcOffiRent` | 317              | `offiNm`   | `excluUseAr`                        |
+| 연립다세대 | `RTMSDataSvcRHRent/getRTMSDataSvcRHRent`     | 524              | `mhouseNm` | `excluUseAr`, `houseType`           |
+| 단독다가구 | `RTMSDataSvcSHRent/getRTMSDataSvcSHRent`     | 453              | 없음       | `totalFloorAr`(연면적), `houseType` |
+
+- 공통 필드: `deposit`(만원, 쉼표 포함), `monthlyRent`(만원, **전세는 0**), `dealYear/Month/Day`, `floor`, `buildYear`, `umdNm`, `jibun`, `sggCd`, `contractType`(신규/갱신, 공백 가능), `contractTerm`(예 `25.12~26.12`, 공백 가능), `preDeposit`·`preMonthlyRent`(갱신 전 금액, 공백 가능), `useRRRight`(갱신요구권 사용, 공백 가능). 아파트는 `aptSeq`, 도로명 필드도 있다.
+- 매매와 달리 **해제 필드(`cdealType`)가 없다.** 전월세 신고 취소는 응답에서 구분되지 않는다.
+- 단독다가구는 건물명·전용면적이 없고 `totalFloorAr`·법정동만 있어 매매와 같은 방식(연면적 ±20% + 법정동)으로만 추정할 수 있다(신뢰도 낮음).
+- 활용신청 승인 상태: 아파트·오피스텔·연립다세대·단독다가구 전월세 모두 현재 키로 호출됨. 오피스텔·연립다세대는 필드명을 추정하지 않고 실제 응답으로 확인했다.
+
+### 앱에 쓸 수 있는 곳 (아직 구현하지 않음)
+
+1. **전세가율 참고**: 같은 단지·면적의 최근 전세 거래 중앙값 ÷ 매매 중앙값. 지금의 사전 점검은 입력 보증금 ÷ 매매 시세만 본다.
+2. **입력 보증금이 주변 전세 시세보다 높은지** 비교(매물 가격이 시세보다 비싼지).
+3. **월세 환산**: 월세 거래의 보증금·월세 조합 참고.
+
+설계할 때 정해야 할 점: 갱신 계약(`contractType=갱신`)은 신규보다 낮게 형성되는 경향이 있어 신규만 쓸지, 표본이 적은 단지의 신뢰도 기준, 전월세 API 호출량(월 단위 호출 × 12개월 × 유형)이 일일 한도 10,000건에 미치는 영향(캐시 필요).
+
 ## 확인하지 못한 것
 
 - `numOfRows` 허용 최대값(자료마다 1000/9999로 설명이 엇갈림).

@@ -138,8 +138,8 @@ body {
   }
 }
 
-/* 분석하기 버튼은 스크롤해도 화면 아래에 항상 보인다 */
-.actions {
+/* 분석하기 버튼은 스크롤해도 화면 아래에 항상 보인다 (리포트 안의 버튼에는 적용하지 않는다) */
+.form .actions {
   position: sticky;
   bottom: 0;
   z-index: 5;
