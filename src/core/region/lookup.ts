@@ -37,6 +37,9 @@ const ENTRIES: Entry[] = SIGUNGU_CODES.map(([code, name]) => {
   return { code, name, sido: sidoShort(first) ?? first, rest };
 });
 
+/** 선택 목록용 시군구 이름 (예: 서울 동대문구) */
+export const SIGUNGU_NAMES: readonly string[] = ENTRIES.map((e) => e.name);
+
 export interface RegionMatch {
   code: string;
   name: string;

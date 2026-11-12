@@ -8,5 +8,5 @@ export { parseRegistryText } from './registry/parse';
 export type { RegistryParseResult } from './registry/parse';
 export { evaluateVerdict, VERDICT_LABEL, STATUS_LABEL } from './verdict/criteria';
 export type { Criterion, CriterionStatus, Verdict, VerdictInput, VerdictResult } from './verdict/criteria';
-export { findSigungu, findDongName } from './region/lookup';
+export { findSigungu, findDongName, SIGUNGU_NAMES } from './region/lookup';
 export type { RegionMatch, RegionResult } from './region/lookup';

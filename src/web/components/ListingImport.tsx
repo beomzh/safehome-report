@@ -6,7 +6,7 @@ import type { ListingFields, UrlHint } from '../../adapters/llm/listing';
 import { findDongName, findSigungu } from '../../core';
 import type { FormState } from '../form';
 import { fileToDataUrl, MAX_ATTACH_IMAGES, pickImageFiles } from '../imageAttach';
-import { openSiteViewer } from '../siteViewer';
+import { canFrame, normalizeViewUrl, openSiteViewer } from '../siteViewer';
 
 interface Props {
   setForm: Dispatch<SetStateAction<FormState>>;
@@ -76,7 +76,11 @@ export function ListingImport({ setForm }: Props) {
   // 올바른 링크가 입력되면 잠시 뒤 사이드바로 보여준다
   useEffect(() => {
     if (!url.trim()) return;
-    const t = setTimeout(() => openSiteViewer(url), 600);
+    // 프레임을 막는 사이트(네이버·호갱노노)는 빈 사이드바만 생기므로 열지 않고 새 창 링크만 보여준다
+    const t = setTimeout(() => {
+      const n = normalizeViewUrl(url);
+      if (n && canFrame(n)) openSiteViewer(n);
+    }, 600);
     return () => clearTimeout(t);
   }, [url]);
 
@@ -159,9 +163,10 @@ export function ListingImport({ setForm }: Props) {
   };
 
   const f = result?.fields;
+  const linkUrl = normalizeViewUrl(url);
+  const blockedLink = linkUrl !== null && !canFrame(linkUrl);
   return (
-    <fieldset>
-      <legend>매물 링크·설명으로 시작하기 (AI, 선택)</legend>
+    <div>
       <label className="field">
         <span>매물 링크 (선택)</span>
         <input
@@ -171,7 +176,16 @@ export function ListingImport({ setForm }: Props) {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
         />
-        <small className="hint">링크를 넣으면 오른쪽 사이드바에서 사이트를 볼 수 있습니다.</small>
+        {blockedLink ? (
+          <small className="hint">
+            이 사이트는 화면 안에 표시할 수 없습니다.{' '}
+            <a href={linkUrl} target="_blank" rel="noopener noreferrer">
+              새 창에서 열기
+            </a>
+          </small>
+        ) : (
+          <small className="hint">링크를 넣으면 오른쪽 사이드바에서 사이트를 볼 수 있습니다.</small>
+        )}
       </label>
       <label className="field">
         <span>매물 설명 붙여넣기 (캡처 이미지도 붙여넣을 수 있음)</span>
@@ -202,13 +216,16 @@ export function ListingImport({ setForm }: Props) {
       <button type="button" className="btn-secondary" onClick={extract} disabled={busy}>
         {busy ? '추출 중…' : 'AI로 항목 추출'}
       </button>
-      <p className="hint">
-        앱은 링크 내용을 직접 읽지 않습니다(플랫폼 약관·차단). 링크에서는 사이트와 매물 번호만 인식하고,
-        항목은 붙여넣은 설명에서 추출합니다. 이 버튼을 누르면 붙여넣은 설명과 첨부한 캡처가 LLM 서버로
-        전송됩니다(텍스트의 전화번호·이메일은 제거하지만 이미지 속 글자는 제거할 수 없으니, 연락처·이름이
-        보이면 가리고 캡처하세요). 추출 결과는 확인 후에만 입력칸에 적용되며, 판정은 AI가 아니라 계산 규칙이
-        합니다.
-      </p>
+      <details className="fold">
+        <summary>전송·개인정보 안내</summary>
+        <p className="hint">
+          앱은 링크 내용을 직접 읽지 않습니다(플랫폼 약관·차단). 링크에서는 사이트와 매물 번호만 인식하고,
+          항목은 붙여넣은 설명에서 추출합니다. 이 버튼을 누르면 붙여넣은 설명과 첨부한 캡처가 LLM 서버로
+          전송됩니다(텍스트의 전화번호·이메일은 제거하지만 이미지 속 글자는 제거할 수 없으니, 연락처·이름이
+          보이면 가리고 캡처하세요). 추출 결과는 확인 후에만 입력칸에 적용되며, 판정은 AI가 아니라 계산 규칙이
+          합니다.
+        </p>
+      </details>
 
       {error && (
         <p className="errors" role="alert">
@@ -261,6 +278,6 @@ export function ListingImport({ setForm }: Props) {
           {regionNote && <p className="hint">{regionNote}</p>}
         </div>
       )}
-    </fieldset>
+    </div>
   );
 }
