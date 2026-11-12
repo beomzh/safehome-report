@@ -687,3 +687,14 @@ dialog.viewer-dialog {
   top: -6px;
   right: -6px;
 }
+.paste-zone {
+  padding: 14px 18px;
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  color: var(--muted, inherit);
+  cursor: text;
+}
+.paste-zone:focus-visible {
+  outline: 2px solid var(--accent);
+  border-color: var(--accent);
+}
