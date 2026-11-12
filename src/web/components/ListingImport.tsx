@@ -4,12 +4,15 @@ import { useEffect, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import type { ListingFields, UrlHint } from '../../adapters/llm/listing';
 import { findDongName, findSigungu } from '../../core';
+import type { FinanceFormState } from '../financeForm';
 import type { FormState } from '../form';
 import { fileToDataUrl, MAX_ATTACH_IMAGES, pickImageFiles } from '../imageAttach';
 import { canFrame, normalizeViewUrl, openSiteViewer } from '../siteViewer';
 
 interface Props {
   setForm: Dispatch<SetStateAction<FormState>>;
+  /** 월세 금액을 대출·자금 계획 입력칸에 넣기 위해 사용 */
+  setFin: Dispatch<SetStateAction<FinanceFormState>>;
 }
 
 interface ListingResponse {
@@ -39,7 +42,7 @@ const PLATFORM_LABEL: Record<UrlHint['platform'], string> = {
  * 링크 내용은 앱이 읽지 않는다(플랫폼 약관·차단). 링크에서는 플랫폼과 매물 번호만 해석하고,
  * 항목은 사용자가 붙여넣은 설명 텍스트에서 추출한다. 추출 결과는 사용자가 확인한 뒤에만 적용한다.
  */
-export function ListingImport({ setForm }: Props) {
+export function ListingImport({ setForm, setFin }: Props) {
   const [url, setUrl] = useState('');
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -159,6 +162,9 @@ export function ListingImport({ setForm }: Props) {
       // 조회에 필요한 값이 모이면 시세 조회를 자동으로 실행한다
       lookupNonce: canLookup ? prev.lookupNonce + 1 : prev.lookupNonce,
     }));
+    // 월세 금액은 중개보수 환산에 쓰이므로 대출·자금 계획 칸에도 넣는다 (없으면 기존 값 유지)
+    const rent = f.monthlyRentManwon;
+    if (rent !== null && rent > 0) setFin((prev) => ({ ...prev, monthlyRentManwon: String(rent) }));
     setApplied(true);
   };
 

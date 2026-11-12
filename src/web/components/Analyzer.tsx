@@ -120,7 +120,7 @@ export function Analyzer() {
         errors={errors}
         onSubmit={analyze}
         onReset={reset}
-        topSlot={<ListingImport setForm={setForm} />}
+        topSlot={<ListingImport setForm={setForm} setFin={setFin} />}
         marketSlot={<MarketLookup form={form} setForm={setForm} />}
         extra={
           <FinanceFields
