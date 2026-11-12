@@ -6,8 +6,6 @@ export interface SiteLink {
   name: string;
   url: string;
   note: string;
-  /** 앱 안(프레임·팝업)에서 보기 버튼을 둘지: 매물 찾기 사이트만 */
-  view?: boolean;
 }
 
 export interface SiteGroup {
@@ -19,11 +17,11 @@ export const SITE_GROUPS: SiteGroup[] = [
   {
     title: '매물 찾기',
     links: [
-      { name: '네이버 부동산', url: 'https://land.naver.com', note: '매물·단지 정보', view: true },
-      { name: '직방', url: 'https://www.zigbang.com', note: '아파트·빌라·오피스텔 매물', view: true },
-      { name: '다방', url: 'https://www.dabangapp.com', note: '원룸·오피스텔·빌라 매물', view: true },
-      { name: '호갱노노', url: 'https://hogangnono.com', note: '단지별 시세·실거래·주변 환경', view: true },
-      { name: 'KB부동산', url: 'https://kbland.kr', note: 'KB시세·단지 정보', view: true },
+      { name: '네이버 부동산', url: 'https://land.naver.com', note: '매물·단지 정보' },
+      { name: '직방', url: 'https://www.zigbang.com', note: '아파트·빌라·오피스텔 매물' },
+      { name: '다방', url: 'https://www.dabangapp.com', note: '원룸·오피스텔·빌라 매물' },
+      { name: '호갱노노', url: 'https://hogangnono.com', note: '단지별 시세·실거래·주변 환경' },
+      { name: 'KB부동산', url: 'https://kbland.kr', note: 'KB시세·단지 정보' },
     ],
   },
   {

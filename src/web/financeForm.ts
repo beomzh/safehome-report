@@ -69,6 +69,27 @@ export const emptyFinanceForm = (): FinanceFormState => ({
   downPaymentPercent: '',
 });
 
+/** 처음 화면에 채워 두는 예시 가정. 공식 값이 아니며 리포트에 그렇게 표시한다 */
+export const EXAMPLE_ASSUMPTIONS = {
+  ltvLimitPercent: '70',
+  dsrLimitPercent: '40',
+  annualRatePercent: '4',
+  stressAddPercent: '1.5',
+  termYears: '30',
+} as const;
+
+/** 필요 조건 계산을 처음부터 보여주기 위한 초기값 (자산·소득은 비움) */
+export const defaultFinanceForm = (): FinanceFormState => ({
+  ...emptyFinanceForm(),
+  enabled: true,
+  ...EXAMPLE_ASSUMPTIONS,
+});
+
+const usesExample = (f: FinanceFormState): boolean =>
+  (Object.keys(EXAMPLE_ASSUMPTIONS) as (keyof typeof EXAMPLE_ASSUMPTIONS)[]).every(
+    (k) => f[k] === EXAMPLE_ASSUMPTIONS[k],
+  );
+
 /** "4.5" 같은 비율(%) 문자열. 소수 넷째 자리까지, 0~100 */
 export function parsePercent(raw: string): { ok: true; value: number } | { ok: false } {
   const s = raw.trim();
@@ -85,6 +106,8 @@ export interface FinanceContext {
   marketWon?: number;
   /** 전용면적(㎡). 취득세의 농어촌특별세 판단에 사용 */
   areaM2?: number;
+  /** 주택 유형. 오피스텔은 주택이 아니라 취득세·중개보수가 다르다 */
+  housing?: 'apt' | 'rowhouse' | 'officetel' | 'house';
 }
 
 export type FinanceBuildResult = { ok: true; input: AffordabilityInput } | { ok: false; errors: string[] };
@@ -166,7 +189,13 @@ function parseCommon(form: FinanceFormState, ctx: FinanceContext, errors: string
   // 법정 요율 자동 계산: 직접 입력한 값이 있으면 그 값을 우선한다
   const costNotes: string[] = [];
   if (form.autoCosts && config) {
-    if (ctx.kind === 'sale' && costs.acquisitionTaxRatePercent === undefined) {
+    if (ctx.kind === 'sale' && costs.acquisitionTaxRatePercent === undefined && ctx.housing === 'officetel') {
+      // 오피스텔은 주택이 아니라 건축물 취득세율 4% + 지방교육세 0.4% + 농어촌특별세 0.2% (잠정, 원문 미확인)
+      costs.acquisitionTaxOverrideWon = Math.floor((ctx.amountWon * 46) / 1000);
+      costNotes.push(
+        `오피스텔 취득세 4.6%(취득세 4% + 지방교육세 0.4% + 농어촌특별세 0.2%) = ${formatWon(costs.acquisitionTaxOverrideWon)}. 주택 세율(1~3%)이 아니라 건축물 세율이 적용됩니다(잠정값, 공식 원문 미확인).`,
+      );
+    } else if (ctx.kind === 'sale' && costs.acquisitionTaxRatePercent === undefined) {
       const t = acquisitionTax(ctx.amountWon, ctx.areaM2, config.acquisitionTax);
       costs.acquisitionTaxOverrideWon = t.total;
       costNotes.push(
@@ -174,7 +203,19 @@ function parseCommon(form: FinanceFormState, ctx: FinanceContext, errors: string
         ...t.notes,
       );
     }
-    if (costs.brokerFeeRatePercent === undefined && costs.brokerFeeOverrideWon === undefined) {
+    if (
+      costs.brokerFeeRatePercent === undefined &&
+      costs.brokerFeeOverrideWon === undefined &&
+      ctx.housing === 'officetel' &&
+      ctx.kind !== 'monthly'
+    ) {
+      // 주거용 오피스텔(전용 85㎡ 이하·입식 부엌·화장실) 상한 요율: 매매 0.5%, 임대차 0.4% (잠정, 원문 미확인)
+      const rate = ctx.kind === 'sale' ? 5 : 4;
+      costs.brokerFeeOverrideWon = Math.floor((ctx.amountWon * rate) / 1000);
+      costNotes.push(
+        `오피스텔 중개보수 상한 ${rate / 10}% = ${formatWon(costs.brokerFeeOverrideWon)} (주거용 오피스텔 기준, 부가세 별도·잠정값).`,
+      );
+    } else if (costs.brokerFeeRatePercent === undefined && costs.brokerFeeOverrideWon === undefined) {
       const b = brokerageFee(ctx.kind, ctx.amountWon, monthlyRentWon, config.brokerage);
       costs.brokerFeeOverrideWon = b.feeWon;
       costNotes.push(
@@ -292,6 +333,11 @@ export function buildFinancePlan(
   const c = parseCommon(form, ctx, errors, config);
   if (errors.length > 0) return { ok: false, errors };
   const assumptionNotes = form.aiFields.length > 0 ? [aiAssumptionNote(form.aiFields)] : [];
+  if (usesExample(form) && form.aiFields.length === 0) {
+    assumptionNotes.push(
+      '대출 기준값(LTV 70%·DSR 40%·금리 4%·스트레스 +1.5%p·30년)은 앱의 예시 가정이며 실제 은행·규제 기준이 아닙니다. 은행 안내값으로 바꿔 다시 계산해 보세요.',
+    );
+  }
 
   const base = {
     kind: ctx.kind,

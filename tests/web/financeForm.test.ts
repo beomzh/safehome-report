@@ -241,3 +241,35 @@ describe('법정 요율 자동 계산 (취득세·중개보수)', () => {
     expect(r.ok && r.requirements.costs?.brokerFeeOverrideWon).toBeUndefined();
   });
 });
+
+describe('기본 화면에서도 필요 조건이 나온다 (자산·소득 없이)', () => {
+  it('defaultFinanceForm 은 예시 가정으로 필요 조건을 계산하고 예시 가정임을 알린다', async () => {
+    const { defaultFinanceForm } = await import('../../src/web/financeForm');
+    const r = buildFinancePlan(defaultFinanceForm(), { kind: 'sale', amountWon: 390_000_000 }, rulesConfig);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.affordability).toBeUndefined();
+      expect(r.requirements.loan.ltvLimitPercent).toBe(70);
+      expect(r.assumptionNotes.join(' ')).toContain('예시 가정');
+    }
+  });
+  it('예시 값을 고치면 예시 가정 문구가 사라진다', async () => {
+    const { defaultFinanceForm } = await import('../../src/web/financeForm');
+    const f = { ...defaultFinanceForm(), ltvLimitPercent: '60' };
+    const r = buildFinancePlan(f, { kind: 'sale', amountWon: 390_000_000 }, rulesConfig);
+    expect(r.ok && r.assumptionNotes.length).toBe(0);
+  });
+  it('오피스텔은 취득세 4.6%·중개보수 0.5% 로 계산한다', () => {
+    const r = buildFinancePlan(
+      filled({ assetsManwon: '', annualIncomeManwon: '' }),
+      { kind: 'sale', amountWon: 390_000_000, housing: 'officetel' },
+      rulesConfig,
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.costNotes.join(' ')).toContain('오피스텔 취득세 4.6%');
+      expect(r.requirements.costs?.acquisitionTaxOverrideWon).toBe(17_940_000);
+      expect(r.requirements.costs?.brokerFeeOverrideWon).toBe(1_950_000);
+    }
+  });
+});

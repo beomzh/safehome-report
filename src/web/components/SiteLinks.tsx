@@ -1,5 +1,4 @@
 import { SITE_GROUPS } from '../siteLinks';
-import { canFrame, openSiteViewer } from '../siteViewer';
 
 /** 방문 전 점검에 쓰는 외부 사이트 모음 (링크만 제공, 앱이 호출하지 않음) */
 export function SiteLinks() {
@@ -18,11 +17,6 @@ export function SiteLinks() {
                 <a href={l.url} target="_blank" rel="noopener noreferrer">
                   {l.name}
                 </a>{' '}
-                {l.view && (
-                  <button type="button" className="btn-secondary" onClick={() => openSiteViewer(l.url)}>
-                    {canFrame(l.url) ? '여기서 보기' : '팝업으로 보기'}
-                  </button>
-                )}{' '}
                 <span className="muted">— {l.note}</span>
               </li>
             ))}
