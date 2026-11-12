@@ -22,8 +22,9 @@
     "windowMonths": 12,
     "minSamples": 3,
     "areaToleranceM2": 3,
+    "rentWindowMonths": 6,
     "status": "provisional",
-    "source": "초기 잠정값(최근 12개월, 최소 3건, 면적 ±3㎡). 실거래 데이터로 검증 후 확정"
+    "source": "초기 잠정값(최근 12개월, 최소 3건, 면적 ±3㎡, 전월세는 최근 6개월). 실거래 데이터로 검증 후 확정"
   },
   "acquisitionTax": {
     "lowerLimitWon": 600000000,

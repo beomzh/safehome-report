@@ -50,3 +50,23 @@ export const SITE_GROUPS: SiteGroup[] = [
     ],
   },
 ];
+
+/**
+ * 대안 단지 이름으로 여는 검색 링크. 실거래 사례에는 매물 주소가 없어 특정 매물로 바로 연결할 수 없고,
+ * 검색 결과 화면으로만 연결한다 (네이버 부동산 단지 검색은 2026-11-12 접속만 확인, 검색어 반영은 사이트 동작에 따름).
+ */
+export function complexSearchLinks(name: string): SiteLink[] {
+  const q = encodeURIComponent(name.trim());
+  return [
+    {
+      name: '네이버 부동산에서 검색',
+      url: `https://new.land.naver.com/search?sk=${q}`,
+      note: '단지·매물 검색',
+    },
+    {
+      name: '네이버 검색',
+      url: `https://search.naver.com/search.naver?query=${q}+${encodeURIComponent('매물')}`,
+      note: '일반 검색',
+    },
+  ];
+}

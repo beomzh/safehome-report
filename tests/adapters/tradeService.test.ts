@@ -123,3 +123,36 @@ describe('createTradeService', () => {
     expect(r.market).toEqual({ estimatedValue: 500_000_000, source: 'trade_median', confidence: 'high' });
   });
 });
+
+describe('estimateRent (전월세 시세)', () => {
+  const rent = (dep: string, monthly: string, ym = '202610', renewal = '신규') =>
+    `<item><aptNm>가나다</aptNm><contractType>${renewal}</contractType><deposit>${dep}</deposit><monthlyRent>${monthly}</monthlyRent>` +
+    `<dealDay>10</dealDay><dealMonth>${ym.slice(4)}</dealMonth><dealYear>${ym.slice(0, 4)}</dealYear><excluUseAr>84.9</excluUseAr></item>`;
+
+  it('전월세 엔드포인트를 월 단위로 호출하고 전세 중앙값을 낸다', async () => {
+    const f = fakeFetch(() =>
+      ok(body([rent('30,000', '0'), rent('32,000', '0'), rent('34,000', '0'), rent('1,000', '100')], 4)),
+    );
+    const s = createTradeService({ apiKey: 'k', fetchFn: f.fn });
+    const r = await s.estimateRent({
+      lawdCd: '11680',
+      asOf: '2026-11-09',
+      targetAreaM2: 84.9,
+      complexName: '가나다',
+      config: config.marketEstimate,
+    });
+    expect(f.urls.every((u) => u.includes('RTMSDataSvcAptRent'))).toBe(true);
+    expect(f.urls).toHaveLength(config.marketEstimate.rentWindowMonths + 1);
+    expect(r.jeonse?.confidence).toBe('high');
+    expect(r.monthly?.sampleCount).toBeGreaterThan(0);
+  });
+
+  it('같은 월은 캐시를 재사용한다', async () => {
+    const f = fakeFetch(() => ok(body([rent('30,000', '0')], 1)));
+    const s = createTradeService({ apiKey: 'k', fetchFn: f.fn });
+    await s.fetchRentMonth('11680', '202610');
+    await s.fetchRentMonth('11680', '202610');
+    expect(f.urls).toHaveLength(1);
+    expect(f.urls[0]).toContain('numOfRows=1000');
+  });
+});

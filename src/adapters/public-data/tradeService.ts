@@ -1,6 +1,13 @@
-import { estimateMarketValue, findSimilarComplexes } from '../../core';
-import type { MarketEstimate, RulesConfig, SimilarComplex, TradeRecord } from '../../core';
-import { parseTradeXml, PublicDataError } from './aptTrade';
+import { estimateMarketValue, estimateRent, findSimilarComplexes } from '../../core';
+import type {
+  MarketEstimate,
+  RentEstimate,
+  RentRecord,
+  RulesConfig,
+  SimilarComplex,
+  TradeRecord,
+} from '../../core';
+import { parseRentXml, parseTradeXml, PublicDataError } from './aptTrade';
 import { HOUSING } from './housing';
 import type { HousingType } from './housing';
 
@@ -20,6 +27,8 @@ export interface TradeServiceOptions {
   /** 실패 시 재시도 횟수 (한도 초과 등 재시도해도 소용없는 오류는 재시도하지 않는다) */
   retries?: number;
   pageSize?: number;
+  /** 전월세는 건수가 많아 더 크게 받는다 (허용 최대 9,999 확인, 기본 1000) */
+  rentPageSize?: number;
   /** 한 달 조회 시 최대 페이지 수 (일일 한도 보호) */
   maxPages?: number;
   cacheTtlMs?: number;
@@ -45,6 +54,7 @@ export function createTradeService(opts: TradeServiceOptions) {
   const timeoutMs = opts.timeoutMs ?? 10_000;
   const retries = opts.retries ?? 2;
   const pageSize = opts.pageSize ?? 100;
+  const rentPageSize = opts.rentPageSize ?? 1000;
   const maxPages = opts.maxPages ?? 20;
   const ttl = opts.cacheTtlMs ?? 6 * 60 * 60 * 1000;
   const now = opts.now ?? Date.now;
@@ -52,22 +62,32 @@ export function createTradeService(opts: TradeServiceOptions) {
   const key = opts.apiKey.includes('%') ? opts.apiKey : encodeURIComponent(opts.apiKey);
   const cache = new Map<string, { at: number; records: TradeRecord[] }>();
 
-  async function fetchPage(housing: HousingType, lawdCd: string, dealYmd: string, pageNo: number) {
+  async function fetchRaw(
+    kind: 'trade' | 'rent',
+    housing: HousingType,
+    lawdCd: string,
+    dealYmd: string,
+    pageNo: number,
+  ): Promise<string> {
     const spec = HOUSING[housing];
+    const endpoint = kind === 'rent' ? spec.rentEndpoint : spec.endpoint;
     const qs = new URLSearchParams({
       LAWD_CD: lawdCd,
       DEAL_YMD: dealYmd,
       pageNo: String(pageNo),
-      numOfRows: String(pageSize),
+      numOfRows: String(kind === 'rent' ? rentPageSize : pageSize),
     }).toString();
     let lastError: unknown;
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        const res = await fetchFn(`${spec.endpoint}?serviceKey=${key}&${qs}`, {
+        const res = await fetchFn(`${endpoint}?serviceKey=${key}&${qs}`, {
           signal: AbortSignal.timeout(timeoutMs),
         });
         if (!res.ok) throw new PublicDataError(`공공데이터 API HTTP ${res.status}`);
-        return parseTradeXml(await res.text(), spec.nameTag, spec.areaTag);
+        const text = await res.text();
+        // 오류 응답이면 여기서 던져 재시도 규칙을 적용한다
+        (kind === 'rent' ? parseRentXml : parseTradeXml)(text, spec.nameTag, spec.areaTag);
+        return text;
       } catch (e) {
         lastError = e;
         log('warn', 'public_data_retry', {
@@ -78,7 +98,7 @@ export function createTradeService(opts: TradeServiceOptions) {
         if (e instanceof PublicDataError && e.code === '30' && housing !== 'apt') {
           // 키에 이 API 권한이 없다: 활용신청 안내
           throw new PublicDataError(
-            `${spec.label} 매매 실거래 API 활용신청이 되어 있지 않은 키입니다. 공공데이터포털에서 신청하세요: ${spec.applyUrl}`,
+            `${spec.label} ${kind === 'rent' ? '전월세' : '매매'} 실거래 API 활용신청이 되어 있지 않은 키입니다. 공공데이터포털에서 신청하세요: ${spec.applyUrl}`,
             '30',
           );
         }
@@ -86,6 +106,42 @@ export function createTradeService(opts: TradeServiceOptions) {
       }
     }
     throw lastError instanceof Error ? lastError : new PublicDataError('공공데이터 API 호출 실패');
+  }
+
+  const fetchPage = async (housing: HousingType, lawdCd: string, dealYmd: string, pageNo: number) =>
+    parseTradeXml(
+      await fetchRaw('trade', housing, lawdCd, dealYmd, pageNo),
+      HOUSING[housing].nameTag,
+      HOUSING[housing].areaTag,
+    );
+  const fetchRentPage = async (housing: HousingType, lawdCd: string, dealYmd: string, pageNo: number) =>
+    parseRentXml(
+      await fetchRaw('rent', housing, lawdCd, dealYmd, pageNo),
+      HOUSING[housing].nameTag,
+      HOUSING[housing].areaTag,
+    );
+  const rentCache = new Map<string, { at: number; records: RentRecord[] }>();
+
+  /** 전월세 한 달치. 월 단위 캐시, 페이지는 크게 받는다(요청 수 절감) */
+  async function fetchRentMonth(
+    lawdCd: string,
+    dealYmd: string,
+    housing: HousingType = 'apt',
+  ): Promise<RentRecord[]> {
+    const cacheKey = `${housing}:${lawdCd}:${dealYmd}`;
+    const hit = rentCache.get(cacheKey);
+    if (hit && now() - hit.at < ttl) return hit.records;
+    const records: RentRecord[] = [];
+    let total = Infinity;
+    for (let page = 1; page <= maxPages && records.length < total; page++) {
+      const parsed = await fetchRentPage(housing, lawdCd, dealYmd, page);
+      records.push(...parsed.records);
+      total = parsed.totalCount;
+      if (parsed.records.length === 0 && parsed.skipped === 0) break;
+    }
+    rentCache.set(cacheKey, { at: now(), records });
+    log('debug', 'public_data_rent_month_loaded', { month: dealYmd, records: records.length });
+    return records;
   }
 
   async function fetchMonth(
@@ -115,6 +171,44 @@ export function createTradeService(opts: TradeServiceOptions) {
 
   return {
     fetchMonth,
+    fetchRentMonth,
+    /**
+     * 전월세 거래로 전세·월세 시세를 추정한다. 월세 거래가 많아 월 단위로 순차 호출하고(한도·429 보호),
+     * 기간은 rentWindowMonths 만 쓴다.
+     */
+    async estimateRent(args: {
+      housing?: HousingType;
+      lawdCd: string;
+      asOf: string;
+      targetAreaM2: number;
+      complexName?: string;
+      dongName?: string;
+      config: RulesConfig['marketEstimate'];
+    }): Promise<RentEstimate & { monthsQueried: number }> {
+      const months = monthsToFetch(args.asOf, args.config.rentWindowMonths);
+      const all: RentRecord[] = [];
+      // 429 를 피하려고 3개월씩 묶어 호출한다
+      for (let i = 0; i < months.length; i += 3) {
+        const chunk = months.slice(i, i + 3);
+        const got = await Promise.all(chunk.map((ym) => fetchRentMonth(args.lawdCd, ym, args.housing)));
+        all.push(...got.flat());
+      }
+      const spec = HOUSING[args.housing ?? 'apt'];
+      const tolerance =
+        spec.areaToleranceRatio !== undefined
+          ? args.targetAreaM2 * spec.areaToleranceRatio
+          : args.config.areaToleranceM2;
+      const est = estimateRent(all, {
+        asOf: args.asOf,
+        targetAreaM2: args.targetAreaM2,
+        areaToleranceM2: tolerance,
+        windowMonths: args.config.rentWindowMonths,
+        minSamples: args.config.minSamples,
+        complexName: args.complexName,
+        dongName: args.dongName,
+      });
+      return { ...est, monthsQueried: months.length };
+    },
     /** 최근 거래를 모아 시세를 추정한다. 설정값(기간·최소 표본·면적 허용 오차)은 rules.config 에서 온다 */
     async estimate(args: {
       housing?: HousingType;
