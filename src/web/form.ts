@@ -218,6 +218,7 @@ export function buildRiskInput(form: FormState, asOf: string): BuildResult {
       market,
       statedPriorLoan,
       building: form.buildingEntries.length > 0 ? form.buildingEntries : undefined,
+      regionCode: /^\d{5}$/.test(form.lookupLawdCd.trim()) ? form.lookupLawdCd.trim() : undefined,
     },
   };
 }

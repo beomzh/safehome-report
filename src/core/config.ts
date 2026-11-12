@@ -24,6 +24,12 @@ const propertyTaxBracketSchema = z.object({
   ratePercent: z.number().positive(),
 });
 
+/** 지역별 소액임차인 기준: 보증금이 depositLimitWon 이하이면 amountWon 까지 담보물권보다 먼저 변제 */
+const smallTenantBracketSchema = z.object({
+  depositLimitWon: z.number().int().positive(),
+  amountWon: z.number().int().positive(),
+});
+
 export const rulesConfigSchema = z.object({
   rulesetVersion: z.number().int().positive(),
   effectiveFrom: isoDateSchema,
@@ -49,6 +55,20 @@ export const rulesConfigSchema = z.object({
     areaToleranceM2: z.number().nonnegative(),
     /** 전월세 시세에 쓰는 최근 N개월 (월세 거래가 많아 매매보다 짧게) */
     rentWindowMonths: z.number().int().positive(),
+  }),
+  /**
+   * 경매 시 보증금 회수 가능액 추정 (R-RECOV-01). 소액임차인 최우선변제 기준은 주택임대차보호법 시행령
+   * 제10조·제11조(2026-07-01 시행본, 2023-02-21 개정 값)이고, 낙찰가율 시나리오는 예측이 아니라 가정이다.
+   */
+  recovery: sourcedSchema.extend({
+    /** 시세 대비 낙찰가 시나리오 (%) */
+    scenarioPercents: z.array(z.number().int().positive().max(100)).min(1),
+    smallTenant: z.object({
+      seoul: smallTenantBracketSchema,
+      capital: smallTenantBracketSchema,
+      metro: smallTenantBracketSchema,
+      other: smallTenantBracketSchema,
+    }),
   }),
   /** 주택 유상취득 취득세 표준세율과 부가세 (지방세법 제11조 제1항 제8호). 중과는 계산하지 않는다 */
   acquisitionTax: sourcedSchema.extend({

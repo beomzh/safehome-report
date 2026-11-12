@@ -99,6 +99,11 @@ export const riskInputSchema = z.object({
   statedPriorLoan: wonSchema.optional(),
   /** 건축물대장 표제부(해당 지번의 건물들). 없으면 용도 룰은 판단 보류(등급에는 영향 없음) */
   building: z.array(buildingEntrySchema).optional(),
+  /** 시군구 법정동코드 5자리 (소액임차인 지역 구분용) */
+  regionCode: z
+    .string()
+    .regex(/^\d{5}$/)
+    .optional(),
 });
 export type RiskInput = z.infer<typeof riskInputSchema>;
 
