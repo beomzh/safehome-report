@@ -61,6 +61,7 @@ export async function POST(request: Request) {
       provider: llm.name,
       verdict: parsed.data.verdict,
       dropped: explanation.droppedForNumbers,
+      claims: explanation.droppedForClaims,
       disagreement: explanation.disagreement !== null,
     });
     return Response.json({ explanation });

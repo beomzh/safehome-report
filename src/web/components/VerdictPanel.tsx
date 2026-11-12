@@ -11,6 +11,7 @@ interface Explanation {
   nextActions: string[];
   disagreement: string | null;
   droppedForNumbers: number;
+  droppedForClaims?: number;
 }
 
 const TONE = { go: 'green', conditional: 'yellow', avoid: 'red' } as const;
@@ -129,6 +130,11 @@ export function VerdictPanel({
           {exp.disagreement && (
             <p className="notice">
               <strong>AI 이견 (결론은 바뀌지 않음):</strong> {exp.disagreement}
+            </p>
+          )}
+          {(exp.droppedForClaims ?? 0) > 0 && (
+            <p className="hint">
+              안전·승인을 단정하는 표현이 들어 있어 {exp.droppedForClaims}개 문장을 제외했습니다.
             </p>
           )}
           {exp.droppedForNumbers > 0 && (
