@@ -58,6 +58,28 @@ export const loanRateInfoSchema = z
         '만기 수와 금리 수가 같아야 한다',
       )
       .optional(),
+    /** 시중은행 실제 대출금리: 은행연합회 비교공시의 직전 달 신규취급액 기준 신용점수 구간별 평균금리 */
+    bankRates: z
+      .object({
+        basis: z.string().min(1),
+        publishedYm: z.string().regex(/^\d{4}-\d{2}$/),
+        scoreBands: z.array(z.string()).min(1),
+        banks: z
+          .array(
+            z.object({
+              name: z.string().min(1),
+              avgPercent: percent.nullable(),
+              avgScore: z.number().nullable(),
+              byBand: z.array(percent.nullable()),
+            }),
+          )
+          .min(1),
+      })
+      .refine(
+        (b) => b.banks.every((x) => x.byBand.length === b.scoreBands.length),
+        '신용점수 구간 수와 금리 수가 같아야 한다',
+      )
+      .optional(),
     benchmarks: z
       .array(z.object({ name: z.string(), percent, publishedAt: isoDate, note: z.string().optional() }))
       .optional(),
@@ -66,7 +88,7 @@ export const loanRateInfoSchema = z
     source: sourceSchema,
   })
   .refine(
-    (p) => p.range || p.table || p.grid || p.termTable || p.benchmarks,
+    (p) => p.range || p.table || p.grid || p.termTable || p.benchmarks || p.bankRates,
     '금리 정보가 하나는 있어야 한다',
   );
 

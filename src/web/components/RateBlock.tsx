@@ -98,6 +98,40 @@ export function RateBlock({ info, today }: { info: LoanRateInfo | undefined; tod
         </div>
       )}
 
+      {info.bankRates && (
+        <div className="table-wrap">
+          <table className="table">
+            <caption className="hint">
+              {info.bankRates.basis} — {info.bankRates.publishedYm} 공시 (실제 적용 금리와 다를 수 있음)
+            </caption>
+            <thead>
+              <tr>
+                <th>은행</th>
+                <th>평균</th>
+                {info.bankRates.scoreBands.map((b) => (
+                  <th key={b}>{b}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[...info.bankRates.banks]
+                .sort((a, b) => (a.avgPercent ?? 99) - (b.avgPercent ?? 99))
+                .map((b) => (
+                  <tr key={b.name}>
+                    <td>{b.name}</td>
+                    <td>
+                      <strong>{b.avgPercent === null ? '-' : pct(b.avgPercent)}</strong>
+                    </td>
+                    {b.byBand.map((v, i) => (
+                      <td key={info.bankRates!.scoreBands[i]}>{v === null ? '-' : pct(v)}</td>
+                    ))}
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {info.benchmarks && (
         <ul className="evidence">
           {info.benchmarks.map((b) => (

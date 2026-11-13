@@ -67,12 +67,19 @@ describe('금리 데이터 파일', () => {
     expect(loanRateInfoSchema.safeParse(bad).success).toBe(false);
   });
 
-  it('은행 상품은 실제 대출금리를 확인하지 못했다고 밝힌다 (기준금리만 제공)', () => {
+  it('은행 상품은 은행연합회 공시의 은행별 평균금리와 COFIX 기준금리를 갖고, 실제 적용 금리와 다를 수 있다고 밝힌다', () => {
     for (const id of ['bank-jeonse', 'bank-mortgage']) {
       const info = rateInfoFor(id);
       expect(info?.benchmarks?.length).toBeGreaterThan(0);
+      expect(info?.bankRates?.banks.length).toBeGreaterThanOrEqual(10);
+      expect(info?.bankRates?.publishedYm).toMatch(/^\d{4}-\d{2}$/);
+      for (const b of info!.bankRates!.banks) {
+        expect(b.byBand).toHaveLength(info!.bankRates!.scoreBands.length);
+        expect(b.avgPercent === null || (b.avgPercent > 2 && b.avgPercent < 9)).toBe(true);
+      }
       expect(info?.range).toBeUndefined();
-      expect(info?.notCovered.join(' ')).toContain('확인하지 못했습니다');
+      expect(info?.notCovered.join(' ')).toContain('실제 적용 금리와 다를 수 있습니다');
+      expect(info?.source.url).toBe('https://portal.kfb.or.kr/compare/loan_household_new.php');
     }
   });
 
