@@ -97,3 +97,45 @@ export function diffWolse(productId, saved, live) {
 export function daysSince(checkedAt, today) {
   return Math.floor((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${checkedAt}T00:00:00Z`)) / 86_400_000);
 }
+
+// ---- 대출 대상 요건(rules.config/loan-eligibility.json) 점검 ----
+
+/** "7.5천만원", "1.3억원", "60만원" 같은 금액 표기를 원으로 바꾼 값을 문장에서 모두 모은다 */
+export function pageAmounts(text) {
+  const units = { 천만원: 10_000_000, 억원: 100_000_000, 만원: 10_000 };
+  const out = new Set();
+  for (const m of text.matchAll(/(\d+(?:\.\d+)?)\s*(천만원|억원|만원)/g))
+    out.add(Math.round(Number(m[1]) * units[m[2]]));
+  return out;
+}
+
+/** 페이지 HTML 을 글자만 남긴 한 줄 텍스트로 바꾼다 */
+export function pageText(html) {
+  return decode(html);
+}
+
+/** 상품의 요건 데이터가 공식 페이지에 그대로 적혀 있는지 본다: 소득·순자산·보증금·월세 금액, 나이, 전용면적 */
+export function diffEligibility(product, text) {
+  const amounts = pageAmounts(text);
+  const missing = [];
+  const need = (label, won) => {
+    if (!amounts.has(won)) missing.push(`${label} ${won.toLocaleString('ko-KR')}원`);
+  };
+  for (const l of product.incomeLimits) need('소득 상한', l.maxWon);
+  if (product.singleEarnerExceptionWon) need('1인 소득 예외', product.singleEarnerExceptionWon);
+  need('순자산 상한', product.netAssetMaxWon);
+  for (const c of product.dealCaps) {
+    need('보증금·주택가격 상한(수도권)', c.capitalWon);
+    need('보증금·주택가격 상한(그 외)', c.otherWon);
+  }
+  if (product.monthlyRentMaxWon) need('월세 상한', product.monthlyRentMaxWon);
+  if (product.areaMaxM2 && !new RegExp(`${product.areaMaxM2}\\s*㎡`).test(text))
+    missing.push(`전용면적 ${product.areaMaxM2}㎡`);
+  if (product.age) {
+    if (!new RegExp(`${product.age.min}\\s*세`).test(text)) missing.push(`나이 하한 ${product.age.min}세`);
+    if (!new RegExp(`${product.age.max}\\s*세`).test(text)) missing.push(`나이 상한 ${product.age.max}세`);
+  }
+  return missing.map(
+    (m) => `${product.productId}: 공식 페이지에서 "${m}"을(를) 찾지 못했습니다 (요건이 바뀌었을 수 있음)`,
+  );
+}

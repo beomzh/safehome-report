@@ -5,6 +5,7 @@
 import { readFileSync } from 'node:fs';
 import {
   daysSince,
+  diffEligibility,
   diffGrid,
   diffWolse,
   flattenGrid,
@@ -12,6 +13,7 @@ import {
   NHUF_ENDPOINT,
   parseHousingStableWolse,
   parseLoanRates,
+  pageText,
   parseYouthWolse,
 } from './loanRateCheck.mjs';
 
@@ -70,6 +72,21 @@ for (const [id, parse] of wolse) {
   await sleep(800);
 }
 
+// 대출 대상 요건(소득·순자산·보증금·나이·면적)이 공식 페이지에 그대로 적혀 있는지 확인한다
+const eligibility = JSON.parse(
+  readFileSync(new URL('../rules.config/loan-eligibility.json', import.meta.url), 'utf8'),
+);
+for (const product of eligibility.products) {
+  try {
+    const diffs = diffEligibility(product, pageText(await fetchText(product.source.url)));
+    console.log(diffs.length === 0 ? `일치  요건 ${product.productId}` : `다름  요건 ${product.productId}`);
+    problems.push(...diffs);
+  } catch (e) {
+    problems.push(`${product.productId} 요건: 확인하지 못했습니다 (${e.message})`);
+  }
+  await sleep(800);
+}
+
 // 이 스크립트가 보지 않는 상품(보금자리론·COFIX 등)은 확인일이 오래됐는지만 알린다
 const covered = new Set([...GRID_PRODUCTS.map((g) => g.id), 'housing-stable-wolse', 'youth-wolse']);
 for (const p of data.products) {
@@ -84,8 +101,8 @@ if (problems.length > 0) {
   console.error('\n차이 또는 확인 실패:');
   for (const p of problems) console.error(`- ${p}`);
   console.error(
-    '\n공식 페이지에서 직접 확인한 뒤 rules.config/loan-rates.json 과 docs/loan-rates.md 를 고치세요.',
+    '\n공식 페이지에서 직접 확인한 뒤 rules.config/loan-rates.json(금리) 또는 loan-eligibility.json(요건)과 docs/loan-rates.md 를 고치세요.',
   );
   process.exit(1);
 }
-console.log('\n점검 대상 상품의 금리가 모두 저장값과 같습니다.');
+console.log('\n점검 대상 상품의 금리와 대출 대상 요건이 모두 저장값과 같습니다.');
