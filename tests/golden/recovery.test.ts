@@ -102,6 +102,22 @@ describe('R-RECOV-01', () => {
     return { rep, r: rep.results.find((x) => x.ruleId === 'R-RECOV-01')! };
   };
 
+  it('최우선변제는 "대상"이 아니라 금액 기준으로는 후보라고 쓰고 확인할 것을 밝힌다', () => {
+    const small = rule({ contract: { ...input().contract, amount: 100_000_000 } }).r;
+    expect(small.evidence.join(' ')).toContain('최우선변제 후보');
+    expect(small.evidence.join(' ')).toContain('확인 필요');
+    expect(small.evidence.join(' ')).not.toContain('최우선변제 대상');
+  });
+
+  it('월세 미지원 사유에 환산 배수를 단정해 적지 않는다', () => {
+    const m = evaluateRisk(
+      { ...input({ registry: undefined }), contract: { ...input().contract, kind: 'monthly' } },
+      config,
+    ).results.find((x) => x.ruleId === 'R-RECOV-01')!;
+    expect(m.evidence.join(' ')).toContain('월차임을 보증금으로 환산');
+    expect(m.evidence.join(' ')).not.toContain('× 100');
+  });
+
   it('시나리오를 정보로 제공하고 종합 등급에는 영향이 없다', () => {
     const { rep, r } = rule();
     const base = evaluateRisk(

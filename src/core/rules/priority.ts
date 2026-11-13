@@ -34,7 +34,9 @@ export const priorityDate: Rule = (ctx) => {
     return unknownResult(id, title, '전입일 또는 확정일자(예정) 미입력', 'info');
   }
 
-  const effectiveFrom = nextDay(moveInDate > fixedDate ? moveInDate : fixedDate);
+  // 대항력은 전입(+점유) 다음 날부터, 확정일자가 전입보다 늦으면 확정일자를 받은 날부터 우선변제 효력이 생긴다.
+  // 같은 날 접수된 근저당은 접수 시각까지 봐야 해서 여기서는 보수적으로 선순위로 본다.
+  const effectiveFrom = fixedDate > moveInDate ? fixedDate : nextDay(moveInDate);
   const mortgages = reg.registry.eul.filter((e) => e.type === 'mortgage' && !e.cancelled);
   if (mortgages.some((m) => !m.registeredAt)) {
     return unknownResult(id, title, '설정일을 인식하지 못한 근저당이 있음', 'info');
@@ -48,10 +50,10 @@ export const priorityDate: Rule = (ctx) => {
     severity: 'info',
     title,
     evidence: [
-      `대항력·우선변제 기준일: ${effectiveFrom}`,
+      `대항력·우선변제 효력이 생기는 날로 계산한 기준일: ${effectiveFrom} (예정일을 입력했다면 예상일이며, 같은 날 접수된 근저당은 접수 시각까지 확인해야 함)`,
       prior.length === 0
         ? '기준일 이전에 설정된 미말소 근저당 없음'
-        : `기준일 이전 설정 근저당 ${prior.length}건 (보증금보다 먼저 변제됨)`,
+        : `기준일 이전 설정 근저당 ${prior.length}건 (보증금보다 선순위로 봄)`,
     ],
     data: { effectiveFrom, priorMortgageCount: prior.length },
     action: '계약 후에도 잔금·전입 전까지 새 근저당이 설정되지 않았는지 등기부를 재확인하세요.',

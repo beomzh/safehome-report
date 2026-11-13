@@ -23,6 +23,7 @@ export const gapEntryTypeSchema = z.enum([
   'provisional_disposition', // 가처분
   'auction_start', // 경매개시결정
   'lease_registration_order', // 임차권등기명령
+  'provisional_registration', // 가등기
   'other',
 ]);
 export type GapEntryType = z.infer<typeof gapEntryTypeSchema>;
@@ -38,7 +39,8 @@ export type GapEntry = z.infer<typeof gapEntrySchema>;
 
 export const eulEntrySchema = z.object({
   rank: z.string().min(1),
-  type: z.enum(['mortgage', 'lease_right', 'other']),
+  /** lease_right 전세권, lease_registration 주택임차권(등기명령) */
+  type: z.enum(['mortgage', 'lease_right', 'lease_registration', 'other']),
   maxClaimAmount: wonSchema.optional(),
   registeredAt: isoDateSchema.optional(),
   cancelled: z.boolean(),

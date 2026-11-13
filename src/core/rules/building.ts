@@ -85,5 +85,16 @@ export const buildingUse: Rule = ({ input }) => {
       action: '주용도가 주택이 아닙니다. 주거용으로 계약해도 되는 건물인지 건축물대장으로 확인하세요.',
     };
   }
+  if (has('residential') && (has('office') || has('other'))) {
+    return {
+      ...base,
+      status: 'triggered',
+      severity: 'yellow',
+      evidence,
+      data,
+      action:
+        '주택 외 용도의 건물이 함께 선택되어 있습니다. 계약할 건물만 골랐는지, 그 건물의 용도가 주택이 맞는지 건축물대장으로 확인하세요.',
+    };
+  }
   return { ...base, status: 'clear', severity: 'red', evidence, data };
 };

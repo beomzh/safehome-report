@@ -50,7 +50,8 @@ export const trustRegistered: Rule = (ctx) => {
     ...base,
     status: 'triggered',
     evidence: hits.map((h) => `갑구 순위 ${h.rank}: 신탁등기 (미말소)`),
-    action: '신탁원부를 확인하고 수탁자(신탁회사)의 임대·매매 동의서가 있는지 확인하세요.',
+    action:
+      '신탁원부를 확인하고 수탁자(신탁회사)의 임대·매매 동의서가 있는지 확인하세요. 동의서가 있어도 계약 권한의 범위, 보증금 수령 계좌, 보증금 반환 책임이 수탁자·위탁자 중 누구에게 있는지는 따로 확인해야 하며, 동의서의 진위는 신탁회사에 직접 확인하세요.',
   };
 };
 
@@ -60,6 +61,7 @@ const RESTRICTION_LABEL: Partial<Record<GapEntryType, string>> = {
   provisional_disposition: '가처분',
   auction_start: '경매개시결정',
   lease_registration_order: '임차권등기명령',
+  provisional_registration: '가등기',
 };
 
 /** R-OWN-03: 권리 제한 (압류·가압류·가처분·경매개시결정·임차권등기명령, 미말소) */
@@ -69,12 +71,21 @@ export const rightsRestriction: Rule = (ctx) => {
   const reg = useRegistry(ctx);
   if (!reg.ok) return unknownResult(id, title, reg.reason);
   const hits = activeGap(reg.registry).filter((e) => e.type in RESTRICTION_LABEL);
+  // 주택임차권(임차권등기명령)은 실제 등기부에서 을구에 적히는 경우가 많다
+  const eulLease = reg.registry.eul.filter((e) => e.type === 'lease_registration' && !e.cancelled);
   const base = { ruleId: id, ruleVersion: RULE_VERSION, title, severity: 'red' as const };
-  if (hits.length === 0) return { ...base, status: 'clear', evidence: ['미말소 권리 제한 없음'] };
+  if (hits.length === 0 && eulLease.length === 0)
+    return { ...base, status: 'clear', evidence: ['미말소 권리 제한 없음'] };
   return {
     ...base,
     status: 'triggered',
-    evidence: hits.map((h) => `갑구 순위 ${h.rank}: ${RESTRICTION_LABEL[h.type]} (미말소)`),
+    evidence: [
+      ...hits.map((h) => `갑구 순위 ${h.rank}: ${RESTRICTION_LABEL[h.type]} (미말소)`),
+      ...eulLease.map(
+        (e) =>
+          `을구 순위 ${e.rank}: 주택임차권(임차권등기) (미말소) — 이전 임차인이 보증금을 돌려받지 못했을 수 있음`,
+      ),
+    ],
     action: '계약을 진행하기 전에 해당 등기의 원인과 해소 가능성을 법무사·변호사와 확인하세요.',
   };
 };

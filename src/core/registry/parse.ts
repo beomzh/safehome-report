@@ -78,18 +78,52 @@ function rowsOf(lines: string[]): Row[] {
  * "1번근저당권설정, 2번근저당권설정등기말소" 처럼 말소되는 순위를 뽑는다.
  * 실제 열람본은 "3번근저당권설정등 / 기말소" 처럼 목적란이 줄바꿈되어 '말소'가 접수일 뒤에 나올 수 있어,
  * 목적이 "N번…"으로 시작하는 행은 행 전체에서 '말소'를 찾는다.
+ * "말소회복"(말소를 되돌려 권리를 되살리는 등기)은 말소가 아니라 회복이므로 따로 센다.
  */
-function cancelledRanks(row: Pick<Row, 'purpose' | 'text'>): string[] {
-  const { purpose, text } = row;
-  const starts = /^\s*\d+(?:-\d+)?\s*번/.test(purpose);
-  const hasCancel = compact(purpose).includes('말소') || (starts && compact(text).includes('말소'));
-  if (!hasCancel || compact(purpose).includes('일부말소') || compact(text).includes('일부말소')) return [];
+function referencedRanks(purpose: string): string[] {
   return [...purpose.matchAll(/(\d+(?:-\d+)?)\s*번/g)].map((m) => m[1]!);
 }
 
-/** 이 행이 말소(해지) 행인가 — 목적란이 줄바꿈되어도 인식한다 */
+type CancelKind = 'cancel' | 'recover' | null;
+
+function cancelKind(row: Pick<Row, 'purpose' | 'text'>): CancelKind {
+  const { purpose, text } = row;
+  const starts = /^\s*\d+(?:-\d+)?\s*번/.test(purpose);
+  const mentions = compact(purpose).includes('말소') || (starts && compact(text).includes('말소'));
+  if (!mentions || compact(purpose).includes('일부말소') || compact(text).includes('일부말소')) return null;
+  if (referencedRanks(purpose).length === 0) return null;
+  return compact(purpose).includes('말소회복') || (starts && compact(text).includes('말소회복'))
+    ? 'recover'
+    : 'cancel';
+}
+
+/** 이 행이 말소(해지)·말소회복 행인가 — 목적란이 줄바꿈되어도 인식한다 */
 function isCancelRow(row: Pick<Row, 'purpose' | 'text'>): boolean {
-  return cancelledRanks(row).length > 0 || compact(row.purpose).includes('말소');
+  return cancelKind(row) !== null || compact(row.purpose).includes('말소');
+}
+
+/** 행 순서대로 말소(추가)와 말소회복(되살림)을 적용해 현재 말소된 순위 집합을 만든다 */
+function cancelledSet(
+  rows: Row[],
+  warnings: string[],
+  where: string,
+): { set: Set<string>; recovered: boolean } {
+  const set = new Set<string>();
+  const recovered: string[] = [];
+  for (const r of rows) {
+    const kind = cancelKind(r);
+    if (kind === null) continue;
+    const ranks = referencedRanks(r.purpose);
+    if (kind === 'recover') {
+      for (const c of ranks) set.delete(c);
+      recovered.push(...ranks);
+    } else for (const c of ranks) set.add(c);
+  }
+  if (recovered.length > 0)
+    warnings.push(
+      `${where} 순위 ${[...new Set(recovered)].join('·')}번에 말소회복 등기가 있습니다. 말소됐던 권리가 되살아났을 수 있으니 원문에서 직접 확인하세요.`,
+    );
+  return { set, recovered: recovered.length > 0 };
 }
 
 function ownerNames(text: string): string[] {
@@ -109,7 +143,7 @@ function gapType(purpose: string, text: string): GapEntryType | 'owner_origin' |
   // 등기명의인의 성명·주소만 바뀐 부기등기 (소유권 변동 아님)
   if (/명의인표시/.test(p)) return 'ignore';
   if (p.includes('소유권보존')) return 'owner_origin';
-  if (p.includes('가등기')) return 'other';
+  if (p.includes('가등기') && !p.includes('본등기')) return 'provisional_registration';
   if (p.includes('신탁') || (p.includes('소유권이전') && /신탁원부|수탁자/.test(text))) return 'trust';
   // 집합건물은 '소유권이전', 건물·토지 공유는 '공유자전원지분전부이전' 처럼 적는다 (실제 열람본 형식)
   if (p.includes('소유권이전') || /지분전부이전|지분이전|전원지분/.test(p)) return 'ownership_transfer';
@@ -150,8 +184,8 @@ export function parseRegistryText(raw: string): RegistryParseResult {
   const gapRows = rowsOf(gapLines);
   const gap: GapEntry[] = [];
   const ownerRows: { rank: string; names: string[] }[] = [];
-  const cancelled = new Set<string>();
-  for (const r of gapRows) for (const c of cancelledRanks(r)) cancelled.add(c);
+  const gapCancel = cancelledSet(gapRows, warnings, '갑구');
+  const cancelled = gapCancel.set;
 
   let unrecognized = 0;
   for (const r of gapRows) {
@@ -173,6 +207,11 @@ export function parseRegistryText(raw: string): RegistryParseResult {
         `갑구 순위 ${r.rank} “${r.purpose}” 은(는) 자동 판정 대상이 아닙니다. 원문에서 직접 확인하세요.`,
       );
     }
+    if (t === 'provisional_registration') {
+      warnings.push(
+        `갑구 순위 ${r.rank}: 가등기가 있습니다. 본등기로 바뀌면 소유권을 잃을 수 있으니 원인과 말소 여부를 원문에서 확인하세요.`,
+      );
+    }
     if (t === 'trust') {
       warnings.push(
         `갑구 순위 ${r.rank}: 신탁 관련 등기가 있습니다. 신탁원부와 말소 여부를 원문에서 확인하세요.`,
@@ -184,6 +223,18 @@ export function parseRegistryText(raw: string): RegistryParseResult {
     gap.push({ rank: r.rank, type: t, registeredAt, cancelled: isCancelled });
   }
   if (unrecognized > 0) confidence -= Math.min(0.3, 0.1 * unrecognized);
+
+  // 공유지분 일부만 이전된 등기는 남은 공동소유자를 마지막 행만으로 알 수 없다
+  const partialShare = gapRows.some((r) => {
+    const c = compact(r.purpose);
+    return !isCancelRow(r) && /지분이전|일부이전/.test(c) && !/전부이전/.test(c) && !cancelled.has(r.rank);
+  });
+  if (partialShare) {
+    confidence -= 0.3;
+    warnings.push(
+      '공유지분 일부가 이전된 등기가 있습니다. 현재 공동소유자와 지분을 이 도구가 모두 확인하지 못했을 수 있으니 소유자 전원과 지분을 원문에서 확인하세요.',
+    );
+  }
 
   const lastOwner = ownerRows[ownerRows.length - 1];
   const owners = (lastOwner?.names ?? []).map((name) => ({ name }));
@@ -200,14 +251,25 @@ export function parseRegistryText(raw: string): RegistryParseResult {
   const eul: EulEntry[] = [];
   if (eulAt >= 0) {
     const eulRows = rowsOf(eulLines);
-    const eulCancelled = new Set<string>();
-    for (const r of eulRows) for (const c of cancelledRanks(r)) eulCancelled.add(c);
+    const eulCancel = cancelledSet(eulRows, warnings, '을구');
+    const eulCancelled = eulCancel.set;
+    if (gapCancel.recovered || eulCancel.recovered) confidence -= 0.2;
+    // 을구 제목은 있는데 행이 없고 "기록사항 없음"도 없으면 내용이 빠졌을 수 있다
+    if (eulRows.length === 0 && !/기록사항없음/.test(compact(eulLines.join('\n')))) {
+      confidence -= 0.2;
+      warnings.push(
+        '을구에서 등기 행을 인식하지 못했고 "기록사항 없음"도 없습니다. 내용이 빠졌을 수 있으니 확인하세요.',
+      );
+    }
     for (const r of eulRows) {
       const p = compact(r.purpose);
       if (isCancelRow(r)) continue;
       const isCancelled = eulCancelled.has(r.rank);
       const registeredAt = isoDate(r.text);
-      if (p.includes('근저당권설정')) {
+      if (/전세권.*근저당|임차권.*근저당/.test(p)) {
+        // 전세권·임차권을 담보로 잡은 근저당은 임차인의 권리에 대한 담보라 건물의 선순위 채권이 아니다
+        eul.push({ rank: r.rank, type: 'other', registeredAt, cancelled: isCancelled });
+      } else if (p.includes('근저당권설정')) {
         const am = /채권최고액\s*금?\s*([\d,]+)\s*원/.exec(r.text);
         const amount = am ? Number(am[1]!.replace(/,/g, '')) : undefined;
         if (amount === undefined || !Number.isSafeInteger(amount)) {
@@ -223,10 +285,17 @@ export function parseRegistryText(raw: string): RegistryParseResult {
             cancelled: isCancelled,
           });
         }
-      } else if (/전세권.*근저당|임차권.*근저당/.test(p)) {
-        // 전세권·임차권을 담보로 잡은 근저당은 임차인의 권리에 대한 담보라 건물의 선순위 채권이 아니다
-        eul.push({ rank: r.rank, type: 'other', registeredAt, cancelled: isCancelled });
-      } else if (p.includes('전세권') || p.includes('임차권')) {
+      } else if (p.includes('임차권')) {
+        // 주택임차권(임차권등기명령): 이전 임차인이 보증금을 돌려받지 못했다는 신호
+        const am = /(?:전세금|임차보증금)\s*금?\s*([\d,]+)\s*원/.exec(r.text);
+        eul.push({
+          rank: r.rank,
+          type: 'lease_registration',
+          maxClaimAmount: am ? Number(am[1]!.replace(/,/g, '')) : undefined,
+          registeredAt,
+          cancelled: isCancelled,
+        });
+      } else if (p.includes('전세권')) {
         const am = /(?:전세금|임차보증금)\s*금?\s*([\d,]+)\s*원/.exec(r.text);
         eul.push({
           rank: r.rank,
