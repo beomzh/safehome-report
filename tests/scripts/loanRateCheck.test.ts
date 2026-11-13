@@ -2,13 +2,17 @@ import { describe, expect, it } from 'vitest';
 import {
   daysSince,
   diffGrid,
+  diffEligibility,
   diffWolse,
   flattenGrid,
   GRID_PRODUCTS,
+  pageAmounts,
+  pageText,
   parseHousingStableWolse,
   parseLoanRates,
   parseYouthWolse,
 } from '../../scripts/loanRateCheck.mjs';
+import { LOAN_ELIGIBILITY } from '../../src/web/loanEligibility';
 import { rateInfoFor } from '../../src/web/loanRates';
 
 describe('parseLoanRates', () => {
@@ -87,5 +91,48 @@ describe('월세 상품 페이지 문구', () => {
 describe('daysSince', () => {
   it('두 날짜 사이 일수', () => {
     expect(daysSince('2026-11-09', '2026-11-12')).toBe(3);
+  });
+});
+
+describe('대출 대상 요건 점검', () => {
+  const product = (id: string) => LOAN_ELIGIBILITY.products.find((p) => p.productId === id)!;
+  // 공식 페이지 문구를 흉내 낸 합성 텍스트 (실제 페이지 전체가 아니다)
+  const page =
+    '<p>부부합산 연소득 5천만원 이하, 순자산가액 3.45억원 이하 무주택 세대주</p>' +
+    '<p>2자녀 이상 가구는 6천만원, 신혼부부인 경우는 7.5천만원 이하</p>' +
+    '<p>일반가구 : 수도권 3억원, 수도권외 2억원</p><p>신혼가구 : 수도권 4억원, 수도권외 3억원</p>' +
+    '<p>임차 전용면적 85㎡ 이하 주택</p>';
+
+  it('금액 표기를 원으로 모은다', () => {
+    expect([...pageAmounts('5천만원 3.45억원 7.5천만원 60만원')].sort((a, b) => a - b)).toEqual([
+      600_000, 50_000_000, 75_000_000, 345_000_000,
+    ]);
+  });
+
+  it('요건 금액이 페이지에 모두 있으면 차이 없음 (HTML 태그가 섞여 있어도)', () => {
+    expect(diffEligibility(product('buteommok'), pageText(page))).toEqual([]);
+  });
+
+  it('페이지에서 순자산 상한이 바뀌면 어느 값을 못 찾았는지 알린다', () => {
+    const changed = page.replace('3.45억원', '3.62억원');
+    const out = diffEligibility(product('buteommok'), pageText(changed));
+    expect(out).toHaveLength(1);
+    expect(out[0]).toContain('순자산 상한 345,000,000원');
+  });
+
+  it('전용면적·나이 요건도 확인한다', () => {
+    expect(diffEligibility(product('buteommok'), pageText(page.replace('85㎡', '90㎡'))).join(' ')).toContain(
+      '전용면적 85㎡',
+    );
+    const youth = diffEligibility(
+      product('youth-wolse'),
+      pageText('<p>소득 5천만원 순자산 3.45억원 보증금 6.5천만원 월세 70만원 전용 60㎡</p>'),
+    );
+    expect(youth.join(' ')).toContain('나이 하한 19세');
+  });
+
+  it('저장된 모든 상품의 요건은 자기 출처가 공식 사이트다', () => {
+    for (const p of LOAN_ELIGIBILITY.products)
+      expect(p.source.url).toMatch(/^https:\/\/nhuf\.molit\.go\.kr\//);
   });
 });
