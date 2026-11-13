@@ -56,6 +56,7 @@ export type PdfReadResult =
   | { ok: false; reason: 'too_large' | 'too_many_pages' | 'no_text' | 'password' | 'invalid' };
 
 /** PDF 파일을 읽어 텍스트로 바꾼다. 텍스트 레이어가 없는 스캔본은 no_text */
+/** pdf.js 가 버퍼를 워커로 넘겨(detach) 버리므로 복사본을 넘겨 원본은 다시 쓸 수 있게 한다 */
 export async function extractPdfText(data: ArrayBuffer): Promise<PdfReadResult> {
   if (data.byteLength > MAX_PDF_BYTES) return { ok: false, reason: 'too_large' };
   try {
@@ -64,7 +65,8 @@ export async function extractPdfText(data: ArrayBuffer): Promise<PdfReadResult> 
       'pdfjs-dist/build/pdf.worker.min.mjs',
       import.meta.url,
     ).toString();
-    const doc = await pdfjs.getDocument({ data: new Uint8Array(data), isEvalSupported: false }).promise;
+    const doc = await pdfjs.getDocument({ data: new Uint8Array(data.slice(0)), isEvalSupported: false })
+      .promise;
     if (doc.numPages > MAX_PDF_PAGES) return { ok: false, reason: 'too_many_pages' };
     const pages: string[] = [];
     for (let n = 1; n <= doc.numPages; n++) {
@@ -90,11 +92,56 @@ export async function extractPdfText(data: ArrayBuffer): Promise<PdfReadResult> 
   }
 }
 
+/** 스캔본 AI 읽기에 보내는 쪽 이미지 한 장의 가로 최대 픽셀과 최대 쪽 수 */
+export const OCR_MAX_WIDTH = 1500;
+export const OCR_MAX_PAGES = 8;
+
+export type PdfImagesResult =
+  | { ok: true; images: string[]; pages: number }
+  | { ok: false; reason: 'too_large' | 'too_many_pages' | 'password' | 'invalid' };
+
+/** PDF 의 쪽을 JPEG data URL 로 그린다 (스캔본을 LLM 비전 모델에 보내기 위한 것, 화면에서만 사용) */
+export async function renderPdfPages(data: ArrayBuffer): Promise<PdfImagesResult> {
+  if (data.byteLength > MAX_PDF_BYTES) return { ok: false, reason: 'too_large' };
+  try {
+    const pdfjs = await import('pdfjs-dist');
+    pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+      'pdfjs-dist/build/pdf.worker.min.mjs',
+      import.meta.url,
+    ).toString();
+    const doc = await pdfjs.getDocument({ data: new Uint8Array(data.slice(0)), isEvalSupported: false })
+      .promise;
+    if (doc.numPages > OCR_MAX_PAGES) return { ok: false, reason: 'too_many_pages' };
+    const images: string[] = [];
+    for (let n = 1; n <= doc.numPages; n++) {
+      const page = await doc.getPage(n);
+      const base = page.getViewport({ scale: 1 });
+      const viewport = page.getViewport({ scale: Math.min(2, OCR_MAX_WIDTH / base.width) });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return { ok: false, reason: 'invalid' };
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvas, canvasContext: ctx, viewport }).promise;
+      images.push(canvas.toDataURL('image/jpeg', 0.85));
+    }
+    await doc.destroy();
+    return { ok: true, images, pages: images.length };
+  } catch (e) {
+    return {
+      ok: false,
+      reason: (e as { name?: string })?.name === 'PasswordException' ? 'password' : 'invalid',
+    };
+  }
+}
+
 export const PDF_ERROR_TEXT: Record<Exclude<PdfReadResult, { ok: true }>['reason'], string> = {
   too_large: 'PDF 가 너무 큽니다 (10MB 이하).',
   too_many_pages: `PDF 쪽수가 너무 많습니다 (${MAX_PDF_PAGES}쪽 이하).`,
   no_text:
-    '이 PDF 에서 글자를 읽지 못했습니다. 스캔본(이미지)은 지원하지 않습니다. 인터넷등기소에서 발급한 PDF 인지 확인하세요.',
+    '이 PDF 에는 읽을 수 있는 글자가 없습니다(스캔본). 아래 "AI 로 스캔본 읽기"를 쓰거나 인터넷등기소에서 발급한 텍스트 PDF 를 쓰세요.',
   password: '암호가 걸린 PDF 는 읽을 수 없습니다.',
   invalid: 'PDF 를 읽지 못했습니다. 파일이 손상되었거나 PDF 가 아닙니다.',
 };
