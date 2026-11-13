@@ -19,7 +19,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "npm run typecheck && npm run lint && npm run test",
-    "rates:check": "node scripts/check-loan-rates.mjs"
+    "rates:check": "node scripts/check-loan-rates.mjs",
+    "scan:image": "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache/ aquasec/trivy:0.76.2 image --scanners vuln,secret --severity HIGH,CRITICAL --exit-code 1 safehome-report:local"
   },
   "dependencies": {
     "next": "^16.4.5",

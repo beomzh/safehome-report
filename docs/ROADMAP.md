@@ -90,7 +90,7 @@
 - [x] `.env` 가이드([operations.md](operations.md)), 데이터 흐름 문서([data-flow.md](data-flow.md))
 - [ ] compose 프로파일(LLM 등), 멀티 아키텍처 이미지
 - [x] Docker 클린 설치 검증(2026-11-13): 저장소 새로 clone → `docker build --no-cache` 48초 → 기동 2초, 포트 127.0.0.1, non-root(uid 1000)·읽기 전용 파일시스템·capability 제거 상태에서 화면 200, 키가 없으면 시세 조회가 안내 문구(503). 총 약 1분(10분 목표 이내). 로컬 `npm install && npm run dev` 경로는 CI 의 `npm ci`·빌드로만 확인
-- [ ] trivy 이미지 스캔(설치되어 있지 않음). 의존성 감사 2026-11-12: 운영 의존성 취약점 0건, 개발 도구(eslint 계열) minimatch 중간 등급 1건 — 수정이 eslint 메이저 변경이라 보류. 저장소 시크릿·하드코딩 경로 검색 0건
+- [x] trivy 이미지 스캔(컨테이너로 실행, `npm run scan:image`): 2026-11-13 베이스 이미지 번들 npm 의 23건과 알파인 1건을 Dockerfile 에서 npm 제거·`apk upgrade` 로 해소해 취약점 0건·시크릿 0건 확인. 의존성 감사 2026-11-12: 운영 의존성 취약점 0건, 개발 도구(eslint 계열) minimatch 중간 등급 1건 — 수정이 eslint 메이저 변경이라 보류. 저장소 시크릿·하드코딩 경로 검색 0건
 
 ## M7 — MCP (P2)
 
