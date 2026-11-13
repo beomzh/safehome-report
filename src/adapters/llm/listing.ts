@@ -122,11 +122,10 @@ export const MAX_IMAGE_DATA_URL_CHARS = 3_000_000;
 const IMAGE_DATA_URL = /^data:image\/(?:png|jpe?g|webp);base64,[A-Za-z0-9+/]+={0,2}$/;
 
 /** 이미지 data URL 목록을 검증한다. 문제가 있으면 사유 문자열, 없으면 null */
-export function validateListingImages(images: unknown): string | null {
+export function validateImageList(images: unknown, max: number): string | null {
   if (images === undefined) return null;
   if (!Array.isArray(images)) return '이미지 형식이 올바르지 않습니다.';
-  if (images.length > MAX_LISTING_IMAGES)
-    return `이미지는 최대 ${MAX_LISTING_IMAGES}장까지 보낼 수 있습니다.`;
+  if (images.length > max) return `이미지는 최대 ${max}장까지 보낼 수 있습니다.`;
   for (const img of images) {
     if (typeof img !== 'string' || !IMAGE_DATA_URL.test(img))
       return '지원하지 않는 이미지 형식입니다 (PNG·JPEG·WebP).';
@@ -134,6 +133,9 @@ export function validateListingImages(images: unknown): string | null {
   }
   return null;
 }
+
+export const validateListingImages = (images: unknown): string | null =>
+  validateImageList(images, MAX_LISTING_IMAGES);
 
 export async function extractListing(
   provider: LlmProvider,
