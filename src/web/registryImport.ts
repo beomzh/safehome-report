@@ -16,6 +16,9 @@ export function registryToForm(facts: RegistryFacts): {
   const gapFlags = Object.fromEntries(
     GAP_FLAGS.map((f) => [f.key, facts.gap.some((e) => e.type === f.key && !e.cancelled)]),
   ) as FormState['gapFlags'];
+  // 주택임차권(임차권등기명령)은 을구에 적히므로 임차권등기명령 체크로 옮긴다
+  if (facts.eul.some((e) => e.type === 'lease_registration' && !e.cancelled))
+    gapFlags.lease_registration_order = true;
 
   const transfers = facts.gap
     .filter((e) => e.type === 'ownership_transfer' && !e.cancelled && e.registeredAt)

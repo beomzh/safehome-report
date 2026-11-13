@@ -49,6 +49,12 @@ describe('R-OWN-02 신탁', () => {
     expect(r.severity).toBe('red');
   });
 
+  it('동의서가 있어도 계약 권한 범위·보증금 수령 계좌·반환 책임은 따로 확인하라고 안내한다', () => {
+    const r = result('R-OWN-02', input({ registry: registry({ gap: [gap({ rank: '3', type: 'trust' })] }) }));
+    expect(r.action).toContain('보증금 반환 책임');
+    expect(r.action).toContain('수령 계좌');
+  });
+
   it('말소된 신탁은 무시한다', () => {
     const r = result(
       'R-OWN-02',

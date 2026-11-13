@@ -16,7 +16,7 @@ const REGION_LABEL: Record<SmallTenantRegion, string> = {
 /**
  * R-RECOV-01: 경매 시 보증금 회수 가능액 (시나리오, 정보).
  * 낙찰가율은 예측이 아니라 가정이고 종합 등급에는 영향을 주지 않는다(severity info). 판정은 R-LTV-01·R-RATIO-01 이 한다.
- * 계산 순서와 한계는 evaluateRecovery 참고. 월세는 환산보증금 기준이라 지원하지 않는다.
+ * 계산 순서와 한계는 evaluateRecovery 참고. 월세는 월차임 환산이 필요해 지원하지 않는다.
  */
 export const recoverableDeposit: Rule = (ctx) => {
   const { input, config } = ctx;
@@ -34,7 +34,7 @@ export const recoverableDeposit: Rule = (ctx) => {
     return { ...base, status: 'not_applicable', severity: 'info', evidence: ['매매 계약에는 적용하지 않음'] };
   }
   if (input.contract.kind === 'monthly') {
-    return unknown('월세는 환산보증금(보증금 + 월세 × 100) 기준으로 소액임차인을 가려야 해 지원하지 않음');
+    return unknown('월세는 월차임을 보증금으로 환산해 소액임차인 여부를 가려야 해 지원하지 않음');
   }
   if (!input.market) return unknown('시세 정보 없음 (시세 입력 또는 실거래가 조회 필요)');
 
@@ -74,7 +74,9 @@ export const recoverableDeposit: Rule = (ctx) => {
     region === 'unknown'
       ? '지역 구분(소액임차인 기준)을 정하지 못해 최우선변제는 계산하지 않았습니다.'
       : `소액임차인 지역 구분: ${REGION_LABEL[region]} — 보증금 ${
-          r.smallTenantEligible === true ? '기준 이하라 최우선변제 대상' : '기준 초과라 최우선변제 대상 아님'
+          r.smallTenantEligible === true
+            ? '금액 기준으로는 최우선변제 후보 (담보권 설정 시점의 기준표·대항요건·배당요구 확인 필요)'
+            : '금액 기준을 넘어 최우선변제 대상 아님'
         }`,
     ...r.scenarios.map(
       (s) =>

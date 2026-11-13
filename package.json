@@ -21,7 +21,8 @@
     "check": "npm run typecheck && npm run lint && npm run test",
     "rates:check": "node scripts/check-loan-rates.mjs",
     "scan:image": "docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache/ aquasec/trivy:0.76.2 image --scanners vuln,secret --severity HIGH,CRITICAL --exit-code 1 safehome-report:local",
-    "rates:banks": "node scripts/fetch-bank-rates.mjs"
+    "rates:banks": "node scripts/fetch-bank-rates.mjs",
+    "review:experts": "node scripts/expert-review.mjs"
   },
   "dependencies": {
     "next": "^16.4.5",

@@ -11,6 +11,7 @@ export const GAP_FLAGS = [
   { key: 'provisional_disposition', label: '가처분' },
   { key: 'auction_start', label: '경매개시결정' },
   { key: 'lease_registration_order', label: '임차권등기명령' },
+  { key: 'provisional_registration', label: '가등기' },
 ] as const satisfies readonly { key: GapEntryType; label: string }[];
 export type GapFlagKey = (typeof GAP_FLAGS)[number]['key'];
 
@@ -84,6 +85,7 @@ export const emptyForm = (): FormState => ({
     provisional_disposition: false,
     auction_start: false,
     lease_registration_order: false,
+    provisional_registration: false,
   },
   mortgages: [],
   transfers: [],

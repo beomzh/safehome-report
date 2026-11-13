@@ -54,6 +54,19 @@ describe('R-BLD-02 건축물대장 용도', () => {
     expect([rule.status, rule.severity]).toEqual(['info', 'info']);
   });
 
+  it('주택과 업무시설·기타 용도 건물이 함께 선택되면 yellow (clear 로 넘기지 않는다)', () => {
+    const mixed = run([
+      { label: '본동', mainPurpose: '공동주택' },
+      { label: '경비실', mainPurpose: '업무시설' },
+    ]).rule;
+    expect([mixed.status, mixed.severity]).toEqual(['triggered', 'yellow']);
+    const other = run([
+      { label: '본동', mainPurpose: '공동주택' },
+      { label: '교회', mainPurpose: '종교시설' },
+    ]).rule;
+    expect(other.severity).toBe('yellow');
+  });
+
   it('주택이 아닌 기타 용도는 yellow', () => {
     expect(run([{ label: '모텔', mainPurpose: '숙박시설' }]).rule.severity).toBe('yellow');
   });

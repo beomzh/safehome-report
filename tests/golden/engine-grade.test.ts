@@ -63,7 +63,7 @@ describe('입력 검증', () => {
 });
 
 describe('R-PRIO-01 대항력 시점', () => {
-  it('기준일(전입·확정일자 중 늦은 날의 다음 날) 이전 근저당을 선순위로 센다', () => {
+  it('기준일 이전(같은 날 포함) 설정 근저당을 선순위로 센다', () => {
     const r = priority(
       input({
         registry: registry({
@@ -75,6 +75,30 @@ describe('R-PRIO-01 대항력 시점', () => {
       }),
     );
     expect(r.data).toEqual({ effectiveFrom: '2026-12-02', priorMortgageCount: 1 });
+  });
+
+  it('전입이 늦거나 같으면 전입 다음 날, 확정일자가 더 늦으면 확정일자를 받은 날이 기준일', () => {
+    const at = (moveInDate: string, fixedDate: string) =>
+      priority(
+        input({
+          contract: {
+            kind: 'jeonse',
+            amount: 300_000_000,
+            counterpartyName: '홍길동',
+            moveInDate,
+            fixedDate,
+          },
+        }),
+      ).data?.effectiveFrom;
+    expect(at('2026-12-01', '2026-12-01')).toBe('2026-12-02'); // 같은 날: 전입 다음 날
+    expect(at('2026-12-01', '2026-11-20')).toBe('2026-12-02'); // 확정일자가 먼저: 전입 다음 날
+    expect(at('2026-12-01', '2026-12-05')).toBe('2026-12-05'); // 확정일자가 나중: 그날 (하루를 더하지 않는다)
+  });
+
+  it('근거 문구는 "먼저 변제됨"으로 단정하지 않고 선순위로 본다고 쓴다', () => {
+    const r = priority(input({ registry: registry({ eul: [mortgage({ registeredAt: '2020-01-01' })] }) }));
+    expect(r.evidence.join(' ')).toContain('선순위로 봄');
+    expect(r.evidence.join(' ')).not.toContain('먼저 변제됨');
   });
 
   it('전입일·확정일자가 없으면 판단 보류(등급 영향 없음)', () => {
