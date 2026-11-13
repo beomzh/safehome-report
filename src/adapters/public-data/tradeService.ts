@@ -39,6 +39,17 @@ export interface TradeServiceOptions {
 
 /** 429 일 때 다시 시도하는 최대 횟수 (대기 1.5초, 3초, 4.5초) */
 const RATE_LIMIT_RETRIES = 3;
+/** 공공데이터포털이 응답 헤더로 알려 주는 남은 일일 호출 수가 이 값 미만이면 경고 로그를 남긴다 */
+export const LOW_QUOTA_WARN = 1000;
+
+/** 응답 헤더 X-RateLimit-Remaining 을 읽는다 (없거나 숫자가 아니면 undefined) */
+export function remainingQuota(res: Response): number | undefined {
+  const raw = res.headers?.get('x-ratelimit-remaining');
+  if (raw === null || raw === undefined) return undefined;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 const NO_RETRY = new Set(['10', '20', '22', '30', '31']);
 
 /** 'YYYY-MM-DD' 기준으로 현재 달과 이전 windowMonths 개월의 YYYYMM 목록 (최신순) */
@@ -90,6 +101,10 @@ export function createTradeService(opts: TradeServiceOptions) {
         const res = await fetchFn(`${endpoint}?serviceKey=${key}&${qs}`, {
           signal: AbortSignal.timeout(timeoutMs),
         });
+        const remaining = remainingQuota(res);
+        if (remaining !== undefined) {
+          log(remaining < LOW_QUOTA_WARN ? 'warn' : 'debug', 'public_data_quota', { remaining });
+        }
         if (res.status === 429)
           throw new PublicDataError(
             '공공데이터포털이 요청이 많다고 잠시 제한했습니다(429). 1~2분 뒤 다시 조회하세요.',

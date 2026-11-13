@@ -195,3 +195,44 @@ describe('429(요청 과다) 처리', () => {
     expect(f.urls).toHaveLength(2);
   });
 });
+
+describe('남은 호출 한도 로그', () => {
+  it('X-RateLimit-Remaining 헤더를 읽고, 적으면 경고로 남긴다', async () => {
+    const logs: { level: string; event: string; fields: Record<string, unknown> }[] = [];
+    const f = fakeFetch(
+      () => new Response(body([rec('1,000')], 1), { headers: { 'x-ratelimit-remaining': '312' } }),
+    );
+    const s = createTradeService({
+      apiKey: 'k',
+      fetchFn: f.fn,
+      log: (level, event, fields) => logs.push({ level, event, fields }),
+    });
+    await s.fetchMonth('11680', '202610');
+    expect(logs.find((l) => l.event === 'public_data_quota')).toMatchObject({
+      level: 'warn',
+      fields: { remaining: 312 },
+    });
+  });
+
+  it('여유가 있으면 debug, 헤더가 없으면 아무것도 남기지 않는다', async () => {
+    const logs: { level: string; event: string }[] = [];
+    const ok1 = fakeFetch(
+      () => new Response(body([rec('1,000')], 1), { headers: { 'x-ratelimit-remaining': '9000' } }),
+    );
+    await createTradeService({
+      apiKey: 'k',
+      fetchFn: ok1.fn,
+      log: (level, event) => logs.push({ level, event }),
+    }).fetchMonth('11680', '202610');
+    expect(logs.find((l) => l.event === 'public_data_quota')?.level).toBe('debug');
+
+    const none: { event: string }[] = [];
+    const ok2 = fakeFetch(() => ok(body([rec('1,000')], 1)));
+    await createTradeService({
+      apiKey: 'k',
+      fetchFn: ok2.fn,
+      log: (_l, event) => none.push({ event }),
+    }).fetchMonth('11680', '202610');
+    expect(none.some((l) => l.event === 'public_data_quota')).toBe(false);
+  });
+});
