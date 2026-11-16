@@ -84,6 +84,11 @@ export const recoverableDeposit: Rule = (ctx) => {
           s.smallTenantWon > 0 ? `최우선변제 ${won(s.smallTenantWon)} + ` : ''
         }선순위 ${won(s.priorPaidWon)} 차감 후 회수 가능 ${won(s.recoverableWon)} (보증금의 ${s.recoveryPercent}%)`,
     ),
+    ...(input.housingType === 'house'
+      ? [
+          '다가구·단독주택이라 다른 임차인의 보증금이 선순위일 수 있습니다. 위 회수액은 그 보증금을 반영하지 않아 실제로는 더 적을 수 있습니다(R-MULTI-01 참고).',
+        ]
+      : []),
     '낙찰가율은 예측이 아니라 가정입니다. 국세·당해세, 경매비용, 다른 임차인은 반영하지 않았고, 전입신고·점유·확정일자를 갖춘 경우의 계산입니다.',
   ];
   return {

@@ -99,6 +99,8 @@ export const riskInputSchema = z.object({
    * 하한값 계산에만 쓰고, 등기부 정보가 있으면 무시한다. 채권최고액으로 환산하지 않는다.
    */
   statedPriorLoan: wonSchema.optional(),
+  /** 주택 유형 (apt 아파트, rowhouse 연립·다세대, officetel 오피스텔, house 단독·다가구). 다가구 룰에 쓴다 */
+  housingType: z.enum(['apt', 'rowhouse', 'officetel', 'house']).optional(),
   /** 건축물대장 표제부(해당 지번의 건물들). 없으면 용도 룰은 판단 보류(등급에는 영향 없음) */
   building: z.array(buildingEntrySchema).optional(),
   /** 시군구 법정동코드 5자리 (소액임차인 지역 구분용) */
