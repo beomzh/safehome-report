@@ -19,6 +19,7 @@ import { ListingImport } from './ListingImport';
 import { MarketLookup } from './MarketLookup';
 import type { LookupInfo } from './MarketLookup';
 import { ProfileFields } from './ProfileFields';
+import { SiteLinks } from './SiteLinks';
 import { ReportDialog } from './ReportDialog';
 import { buildReportTabs } from './reportTabs';
 
@@ -146,8 +147,8 @@ export function PreVisit() {
           <section className="card empty">
             <h2>방문 전 점검 결과</h2>
             <p className="muted">
-              매물 링크와 캡처(또는 설명 글)를 넣고 “AI로 항목 추출”을 누르면, 보러 갈지와 대략의 대출 규모를
-              여기에 바로 보여줍니다. AI를 쓰지 않으려면 금액만 직접 입력해도 됩니다.
+              매물 캡처나 설명 글을 붙여넣으면 AI가 바로 읽어서, 보러 갈지와 대략의 대출 규모를 여기에 바로
+              보여줍니다. AI를 쓰지 않으려면 금액만 직접 입력해도 됩니다.
             </p>
           </section>
         ) : !result ? (
@@ -160,6 +161,7 @@ export function PreVisit() {
         ) : (
           <ResultCard result={result} onOpen={() => setOpen(true)} onAfter={goAfter} />
         )}
+        <SiteLinks />
       </div>
 
       {result && (

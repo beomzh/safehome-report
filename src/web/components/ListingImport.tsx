@@ -81,7 +81,9 @@ export function ListingImport({ setForm, setFin, autoApply = false }: Props) {
     if (urls.length < Math.min(picked.length, room))
       setError('일부 이미지를 읽지 못했습니다. PNG·JPEG·WebP 인지 확인하세요.');
     else setError(null);
-    setImages((prev) => [...prev, ...urls].slice(0, MAX_ATTACH_IMAGES));
+    const next = [...images, ...urls].slice(0, MAX_ATTACH_IMAGES);
+    setImages(next);
+    if (autoApply) void extractRef.current({ images: next });
   };
 
   addRef.current = addFiles;
@@ -110,11 +112,15 @@ export function ListingImport({ setForm, setFin, autoApply = false }: Props) {
     return () => window.removeEventListener('paste', onPaste);
   }, []);
 
-  const extract = async () => {
+  const extractRef = useRef<(over?: { text?: string; images?: string[] }) => Promise<void>>(async () => {});
+
+  const extract = async (over?: { text?: string; images?: string[] }) => {
+    const useText = over?.text ?? text;
+    const useImages = over?.images ?? images;
     setError(null);
     setResult(null);
     setApplied(false);
-    if (text.trim().length < 10 && images.length === 0) {
+    if (useText.trim().length < 10 && useImages.length === 0) {
       setError(
         '링크만으로는 매물 내용을 읽을 수 없습니다. 매물 화면의 설명을 복사해 붙여넣거나, 화면을 캡처해 이미지로 넣어 주세요.',
       );
@@ -125,7 +131,7 @@ export function ListingImport({ setForm, setFin, autoApply = false }: Props) {
       const res = await fetch('/api/listing', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ text, url, images }),
+        body: JSON.stringify({ text: useText, url, images: useImages }),
       });
       const data = (await res.json()) as ListingResponse;
       if (!res.ok || !data.fields) {
@@ -140,6 +146,8 @@ export function ListingImport({ setForm, setFin, autoApply = false }: Props) {
       setBusy(false);
     }
   };
+
+  extractRef.current = extract;
 
   const apply = () => {
     if (result) applyFields(result.fields);
@@ -218,6 +226,17 @@ export function ListingImport({ setForm, setFin, autoApply = false }: Props) {
           placeholder="매물 화면의 가격·면적·층 등을 복사해 붙여넣거나, 화면 캡처(Ctrl/⌘+V)를 그대로 붙여넣으세요 (최대 4장)"
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onPaste={(e) => {
+            // 방문 전 점검: 글을 붙여넣으면 바로 읽는다 (직접 타이핑할 때는 버튼으로)
+            const pasted = e.clipboardData.getData('text');
+            if (autoApply && pasted.trim().length >= 10) {
+              const all =
+                text.slice(0, e.currentTarget.selectionStart) +
+                pasted +
+                text.slice(e.currentTarget.selectionEnd);
+              void extractRef.current({ text: all });
+            }
+          }}
         />
       </label>
       {images.length > 0 && (
@@ -237,17 +256,17 @@ export function ListingImport({ setForm, setFin, autoApply = false }: Props) {
           ))}
         </div>
       )}
-      <button type="button" className="btn-secondary" onClick={extract} disabled={busy}>
-        {busy ? '추출 중…' : 'AI로 항목 추출'}
+      <button type="button" className="btn-secondary" onClick={() => void extract()} disabled={busy}>
+        {busy ? '추출 중…' : autoApply ? '다시 추출' : 'AI로 항목 추출'}
       </button>
       <details className="fold">
         <summary>전송·개인정보 안내</summary>
         <p className="hint">
           앱은 링크 내용을 직접 읽지 않습니다(플랫폼 약관·차단). 링크에서는 사이트와 매물 번호만 인식하고,
-          항목은 붙여넣은 설명에서 추출합니다. 이 버튼을 누르면 붙여넣은 설명과 첨부한 캡처가 LLM 서버로
-          전송됩니다(텍스트의 전화번호·이메일은 제거하지만 이미지 속 글자는 제거할 수 없으니, 연락처·이름이
-          보이면 가리고 캡처하세요). 추출 결과는 확인 후에만 입력칸에 적용되며, 판정은 AI가 아니라 계산 규칙이
-          합니다.
+          항목은 붙여넣은 설명에서 추출합니다. 이 버튼을 누르면(방문 전 점검 화면에서는 캡처·글을 붙여넣는
+          즉시) 붙여넣은 설명과 첨부한 캡처가 LLM 서버로 전송됩니다(텍스트의 전화번호·이메일은 제거하지만
+          이미지 속 글자는 제거할 수 없으니, 연락처·이름이 보이면 가리고 캡처하세요). 추출 결과는 확인 후에만
+          입력칸에 적용되며, 판정은 AI가 아니라 계산 규칙이 합니다.
         </p>
       </details>
 
