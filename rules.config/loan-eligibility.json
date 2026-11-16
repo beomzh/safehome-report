@@ -270,7 +270,8 @@
         "name": "주택도시기금 — 청년전용 보증부월세대출 대출안내",
         "url": "https://nhuf.molit.go.kr/FP/FP05/FP0502/FP05020701.jsp",
         "checkedAt": "2026-11-12"
-      }
+      },
+      "requireSingle": true
     },
     {
       "productId": "didimdol",
@@ -357,6 +358,13 @@
         "dtiPercent": 60,
         "termYears": [10, 15, 20, 30],
         "note": "생애최초 LTV 80%는 수도권·규제지역 밖에서만(수도권·규제지역은 70%) — 규제지역 여부는 확인하지 못해 수도권 밖일 때만 80%로 계산"
+      },
+      "singleHead": {
+        "minAge": 30,
+        "areaMaxM2": 60,
+        "dealCapWon": 300000000,
+        "capWon": 150000000,
+        "capFirstHomeWon": 200000000
       }
     },
     {

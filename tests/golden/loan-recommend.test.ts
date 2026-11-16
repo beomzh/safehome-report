@@ -1,9 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { evaluateProduct, gridRate, parseKoreanAmount, recommendLoans, upperBound } from '../../src/core';
+import {
+  evaluateProduct,
+  gridRate,
+  parseKoreanAmount,
+  policyAssumptions,
+  recommendLoans,
+  upperBound,
+} from '../../src/core';
 import type { LoanDeal, LoanProfile } from '../../src/core';
 import { LOAN_ELIGIBILITY } from '../../src/web/loanEligibility';
 import { LOAN_RATES, rateInfoFor } from '../../src/web/loanRates';
 import { LOAN_PRODUCTS } from '../../src/web/loans';
+import { defaultProfile, toLoanProfile } from '../../src/web/profile';
+import type { ProfileState } from '../../src/web/profile';
 
 const profile = (over: Partial<LoanProfile> = {}): LoanProfile => ({
   incomeWon: 40_000_000,
@@ -166,9 +175,15 @@ describe('월세·매매', () => {
   });
   it('청년 보증부월세: 전용 60㎡·보증금 6.5천·월세 70만 이하, 만 19~34세', () => {
     expect(
-      status('youth-wolse', profile(), monthly({ amountWon: 60_000_000, monthlyRentWon: 600_000 })),
+      status(
+        'youth-wolse',
+        profile({ single: true }),
+        monthly({ amountWon: 60_000_000, monthlyRentWon: 600_000 }),
+      ),
     ).toBe('likely');
-    expect(result('youth-wolse', profile(), monthly({ areaM2: 70 }), '전용면적')).toBe('fail');
+    expect(result('youth-wolse', profile({ single: true }), monthly({ areaM2: 70 }), '전용면적')).toBe(
+      'fail',
+    );
   });
   it('디딤돌: 소득 6천(생애최초 7천, 신혼 8.5천), 주택가격 5억(신혼 6억)', () => {
     const sale: LoanDeal = { kind: 'sale', amountWon: 450_000_000, capital: true, areaM2: 59 };
@@ -218,5 +233,67 @@ describe('데이터 정합성', () => {
       expect(rateInfoFor(p.productId), p.productId).toBeDefined();
       expect(p.source.url.startsWith('https://nhuf.molit.go.kr/')).toBe(true);
     }
+  });
+});
+
+describe('혼인 상태: 미혼 단독세대주', () => {
+  const sale = (over: Partial<LoanDeal> = {}): LoanDeal => ({
+    kind: 'sale',
+    amountWon: 250_000_000,
+    capital: true,
+    areaM2: 49,
+    ...over,
+  });
+  const monthly: LoanDeal = {
+    kind: 'monthly',
+    amountWon: 50_000_000,
+    monthlyRentWon: 500_000,
+    capital: true,
+    areaM2: 40,
+  };
+
+  it('청년 보증부월세는 단독세대주(미혼)만: 미혼 ok, 기혼·신혼 fail, 모르면 확인 필요', () => {
+    expect(result('youth-wolse', profile({ single: true }), monthly, '단독세대주(혼인 상태)')).toBe('ok');
+    expect(result('youth-wolse', profile({ single: false }), monthly, '단독세대주(혼인 상태)')).toBe('fail');
+    expect(result('youth-wolse', profile({ single: undefined }), monthly, '단독세대주(혼인 상태)')).toBe(
+      'unknown',
+    );
+  });
+
+  it('디딤돌: 미혼 단독세대주는 만 30세 이상, 주택가격 3억 이하, 전용 60㎡ 이하로 제한된다', () => {
+    const single = profile({ single: true, age: 33 });
+    expect(status('didimdol', single, sale())).toBe('likely');
+    expect(result('didimdol', { ...single, age: 28 }, sale(), '나이(미혼 단독세대주)')).toBe('fail');
+    expect(result('didimdol', single, sale({ amountWon: 350_000_000 }), '주택가격')).toBe('fail');
+    expect(result('didimdol', single, sale({ areaM2: 70 }), '전용면적')).toBe('fail');
+    // 기혼이면 일반 상한(5억·85㎡)
+    expect(
+      result(
+        'didimdol',
+        profile({ single: false }),
+        sale({ amountWon: 350_000_000, areaM2: 70 }),
+        '주택가격',
+      ),
+    ).toBe('ok');
+  });
+
+  it('미혼 단독세대주의 디딤돌 호당 한도는 1.5억(생애최초 2억)', () => {
+    const base = profile({ single: true, age: 33 });
+    expect(policyAssumptions(product('didimdol'), base, sale(), rateInfoFor('didimdol'))!.capWon).toBe(
+      150_000_000,
+    );
+    expect(
+      policyAssumptions(product('didimdol'), { ...base, firstHome: true }, sale(), rateInfoFor('didimdol'))!
+        .capWon,
+    ).toBe(200_000_000);
+  });
+
+  it('혼인 상태 입력이 요건 판정용 프로필로 바뀐다 (미혼이면 맞벌이 무시, 신혼이면 newlywed)', () => {
+    const p = (marital: ProfileState['marital'], dual = true) =>
+      toLoanProfile({ ...defaultProfile(), marital, dualIncome: dual }, '6000');
+    expect(p('single')).toMatchObject({ single: true, newlywed: false, dualIncome: false });
+    expect(p('married')).toMatchObject({ single: false, newlywed: false, dualIncome: true });
+    expect(p('newlywed')).toMatchObject({ single: false, newlywed: true });
+    expect(p('').single).toBeUndefined();
   });
 });

@@ -28,7 +28,7 @@ export function MarketNotes({ info }: { info: LookupInfo }) {
       {similar.length > 0 && (
         <>
           <h3>같은 지역에서 비슷한 면적으로 거래된 다른 단지 (참고)</h3>
-          <SimilarList similar={similar} />
+          <SimilarList similar={similar} region={info.region} />
           <p className="hint">
             판매 중인 매물이 아니라 최근 실제 거래 사례입니다. 대안 단지를 찾는 출발점으로만 쓰고, 지금 나온
             매물은 아래 매물 사이트에서 확인하세요.
