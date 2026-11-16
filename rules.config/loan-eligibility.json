@@ -8,21 +8,75 @@
       "requireHomeless": true,
       "requireHead": true,
       "incomeLimits": [
-        { "when": "always", "maxWon": 50000000 },
-        { "when": "twoChildren", "maxWon": 60000000 },
-        { "when": "newlywed", "maxWon": 75000000 }
+        {
+          "when": "always",
+          "maxWon": 50000000
+        },
+        {
+          "when": "twoChildren",
+          "maxWon": 60000000
+        },
+        {
+          "when": "newlywed",
+          "maxWon": 75000000
+        }
       ],
       "netAssetMaxWon": 345000000,
       "dealCaps": [
-        { "when": "always", "capitalWon": 300000000, "otherWon": 200000000 },
-        { "when": "newlywed", "capitalWon": 400000000, "otherWon": 300000000 },
-        { "when": "twoChildren", "capitalWon": 400000000, "otherWon": 300000000 }
+        {
+          "when": "always",
+          "capitalWon": 300000000,
+          "otherWon": 200000000
+        },
+        {
+          "when": "newlywed",
+          "capitalWon": 400000000,
+          "otherWon": 300000000
+        },
+        {
+          "when": "twoChildren",
+          "capitalWon": 400000000,
+          "otherWon": 300000000
+        }
       ],
       "areaMaxM2": 85,
       "source": {
         "name": "주택도시기금 — 버팀목전세자금 대출안내",
         "url": "https://nhuf.molit.go.kr/FP/FP05/FP0502/FP05020101.jsp",
         "checkedAt": "2026-11-12"
+      },
+      "financing": {
+        "ltvPercent": [
+          {
+            "when": "always",
+            "percent": 70
+          },
+          {
+            "when": "newlywed",
+            "percent": 80
+          },
+          {
+            "when": "twoChildren",
+            "percent": 80
+          }
+        ],
+        "capWon": [
+          {
+            "when": "always",
+            "capitalWon": 120000000,
+            "otherWon": 80000000
+          },
+          {
+            "when": "newlywed",
+            "capitalWon": 250000000,
+            "otherWon": 160000000
+          },
+          {
+            "when": "twoChildren",
+            "capitalWon": 250000000,
+            "otherWon": 160000000
+          }
+        ]
       }
     },
     {
@@ -30,15 +84,45 @@
       "kind": "jeonse",
       "requireHomeless": true,
       "requireHead": true,
-      "incomeLimits": [{ "when": "always", "maxWon": 50000000 }],
+      "incomeLimits": [
+        {
+          "when": "always",
+          "maxWon": 50000000
+        }
+      ],
       "netAssetMaxWon": 345000000,
-      "age": { "min": 19, "max": 34 },
-      "dealCaps": [{ "when": "always", "capitalWon": 300000000, "otherWon": 300000000 }],
+      "age": {
+        "min": 19,
+        "max": 34
+      },
+      "dealCaps": [
+        {
+          "when": "always",
+          "capitalWon": 300000000,
+          "otherWon": 300000000
+        }
+      ],
       "areaMaxM2": 85,
       "source": {
         "name": "주택도시기금 — 청년전용 버팀목전세자금 대출안내",
         "url": "https://nhuf.molit.go.kr/FP/FP05/FP0502/FP05020301.jsp",
         "checkedAt": "2026-11-12"
+      },
+      "financing": {
+        "ltvPercent": [
+          {
+            "when": "always",
+            "percent": 80
+          }
+        ],
+        "capWon": [
+          {
+            "when": "always",
+            "capitalWon": 150000000,
+            "otherWon": 150000000
+          }
+        ],
+        "note": "만 25세 미만 단독세대주는 호당 한도 1.2억원(계산에는 1.5억원 적용)"
       }
     },
     {
@@ -47,15 +131,41 @@
       "requireHomeless": true,
       "requireHead": true,
       "requireNewlywed": true,
-      "incomeLimits": [{ "when": "always", "maxWon": 75000000 }],
+      "incomeLimits": [
+        {
+          "when": "always",
+          "maxWon": 75000000
+        }
+      ],
       "singleEarnerExceptionWon": 50000000,
       "netAssetMaxWon": 345000000,
-      "dealCaps": [{ "when": "always", "capitalWon": 400000000, "otherWon": 300000000 }],
+      "dealCaps": [
+        {
+          "when": "always",
+          "capitalWon": 400000000,
+          "otherWon": 300000000
+        }
+      ],
       "areaMaxM2": 85,
       "source": {
         "name": "주택도시기금 — 신혼부부전용 전세자금 대출안내",
         "url": "https://nhuf.molit.go.kr/FP/FP05/FP0502/FP05020401.jsp",
         "checkedAt": "2026-11-12"
+      },
+      "financing": {
+        "ltvPercent": [
+          {
+            "when": "always",
+            "percent": 80
+          }
+        ],
+        "capWon": [
+          {
+            "when": "always",
+            "capitalWon": 250000000,
+            "otherWon": 160000000
+          }
+        ]
       }
     },
     {
@@ -65,16 +175,43 @@
       "requireHead": true,
       "requireNewborn": true,
       "incomeLimits": [
-        { "when": "always", "maxWon": 130000000 },
-        { "when": "dualIncome", "maxWon": 200000000 }
+        {
+          "when": "always",
+          "maxWon": 130000000
+        },
+        {
+          "when": "dualIncome",
+          "maxWon": 200000000
+        }
       ],
       "netAssetMaxWon": 345000000,
-      "dealCaps": [{ "when": "always", "capitalWon": 500000000, "otherWon": 400000000 }],
+      "dealCaps": [
+        {
+          "when": "always",
+          "capitalWon": 500000000,
+          "otherWon": 400000000
+        }
+      ],
       "areaMaxM2": 85,
       "source": {
         "name": "주택도시기금 — 신생아 특례 버팀목대출 대출안내",
         "url": "https://nhuf.molit.go.kr/FP/FP05/FP0502/FP05021401.jsp",
         "checkedAt": "2026-11-12"
+      },
+      "financing": {
+        "ltvPercent": [
+          {
+            "when": "always",
+            "percent": 80
+          }
+        ],
+        "capWon": [
+          {
+            "when": "always",
+            "capitalWon": 240000000,
+            "otherWon": 240000000
+          }
+        ]
       }
     },
     {
@@ -82,9 +219,20 @@
       "kind": "monthly",
       "requireHomeless": false,
       "requireHead": false,
-      "incomeLimits": [{ "when": "always", "maxWon": 50000000 }],
+      "incomeLimits": [
+        {
+          "when": "always",
+          "maxWon": 50000000
+        }
+      ],
       "netAssetMaxWon": 345000000,
-      "dealCaps": [{ "when": "always", "capitalWon": 100000000, "otherWon": 100000000 }],
+      "dealCaps": [
+        {
+          "when": "always",
+          "capitalWon": 100000000,
+          "otherWon": 100000000
+        }
+      ],
       "monthlyRentMaxWon": 600000,
       "areaMaxM2": 85,
       "source": {
@@ -98,10 +246,24 @@
       "kind": "monthly",
       "requireHomeless": true,
       "requireHead": true,
-      "incomeLimits": [{ "when": "always", "maxWon": 50000000 }],
+      "incomeLimits": [
+        {
+          "when": "always",
+          "maxWon": 50000000
+        }
+      ],
       "netAssetMaxWon": 345000000,
-      "age": { "min": 19, "max": 34 },
-      "dealCaps": [{ "when": "always", "capitalWon": 65000000, "otherWon": 65000000 }],
+      "age": {
+        "min": 19,
+        "max": 34
+      },
+      "dealCaps": [
+        {
+          "when": "always",
+          "capitalWon": 65000000,
+          "otherWon": 65000000
+        }
+      ],
       "monthlyRentMaxWon": 700000,
       "areaMaxM2": 60,
       "source": {
@@ -116,23 +278,85 @@
       "requireHomeless": true,
       "requireHead": true,
       "incomeLimits": [
-        { "when": "always", "maxWon": 60000000 },
-        { "when": "firstHome", "maxWon": 70000000 },
-        { "when": "twoChildren", "maxWon": 70000000 },
-        { "when": "newlywed", "maxWon": 85000000 }
+        {
+          "when": "always",
+          "maxWon": 60000000
+        },
+        {
+          "when": "firstHome",
+          "maxWon": 70000000
+        },
+        {
+          "when": "twoChildren",
+          "maxWon": 70000000
+        },
+        {
+          "when": "newlywed",
+          "maxWon": 85000000
+        }
       ],
       "singleEarnerExceptionWon": 60000000,
       "netAssetMaxWon": 511000000,
       "dealCaps": [
-        { "when": "always", "capitalWon": 500000000, "otherWon": 500000000 },
-        { "when": "newlywed", "capitalWon": 600000000, "otherWon": 600000000 },
-        { "when": "twoChildren", "capitalWon": 600000000, "otherWon": 600000000 }
+        {
+          "when": "always",
+          "capitalWon": 500000000,
+          "otherWon": 500000000
+        },
+        {
+          "when": "newlywed",
+          "capitalWon": 600000000,
+          "otherWon": 600000000
+        },
+        {
+          "when": "twoChildren",
+          "capitalWon": 600000000,
+          "otherWon": 600000000
+        }
       ],
       "areaMaxM2": 85,
       "source": {
         "name": "주택도시기금 — 내집마련 디딤돌대출 대출안내",
         "url": "https://nhuf.molit.go.kr/FP/FP05/FP0503/FP05030101.jsp",
         "checkedAt": "2026-11-12"
+      },
+      "financing": {
+        "ltvPercent": [
+          {
+            "when": "always",
+            "percent": 70
+          },
+          {
+            "when": "firstHome",
+            "percent": 80,
+            "requiresNonCapital": true
+          }
+        ],
+        "capWon": [
+          {
+            "when": "always",
+            "capitalWon": 200000000,
+            "otherWon": 200000000
+          },
+          {
+            "when": "firstHome",
+            "capitalWon": 240000000,
+            "otherWon": 240000000
+          },
+          {
+            "when": "newlywed",
+            "capitalWon": 320000000,
+            "otherWon": 320000000
+          },
+          {
+            "when": "twoChildren",
+            "capitalWon": 320000000,
+            "otherWon": 320000000
+          }
+        ],
+        "dtiPercent": 60,
+        "termYears": [10, 15, 20, 30],
+        "note": "생애최초 LTV 80%는 수도권·규제지역 밖에서만(수도권·규제지역은 70%) — 규제지역 여부는 확인하지 못해 수도권 밖일 때만 80%로 계산"
       }
     },
     {
@@ -142,16 +366,51 @@
       "requireHead": true,
       "requireNewborn": true,
       "incomeLimits": [
-        { "when": "always", "maxWon": 130000000 },
-        { "when": "dualIncome", "maxWon": 200000000 }
+        {
+          "when": "always",
+          "maxWon": 130000000
+        },
+        {
+          "when": "dualIncome",
+          "maxWon": 200000000
+        }
       ],
       "netAssetMaxWon": 511000000,
-      "dealCaps": [{ "when": "always", "capitalWon": 900000000, "otherWon": 900000000 }],
+      "dealCaps": [
+        {
+          "when": "always",
+          "capitalWon": 900000000,
+          "otherWon": 900000000
+        }
+      ],
       "areaMaxM2": 85,
       "source": {
         "name": "주택도시기금 — 신생아 특례 디딤돌대출 대출안내",
         "url": "https://nhuf.molit.go.kr/FP/FP05/FP0503/FP05030801.jsp",
         "checkedAt": "2026-11-12"
+      },
+      "financing": {
+        "ltvPercent": [
+          {
+            "when": "always",
+            "percent": 70
+          },
+          {
+            "when": "firstHome",
+            "percent": 80,
+            "requiresNonCapital": true
+          }
+        ],
+        "capWon": [
+          {
+            "when": "always",
+            "capitalWon": 400000000,
+            "otherWon": 400000000
+          }
+        ],
+        "dtiPercent": 60,
+        "termYears": [10, 15, 20, 30],
+        "note": "생애최초 LTV 80%는 수도권·규제지역 밖에서만(수도권·규제지역은 70%) — 규제지역 여부는 확인하지 못해 수도권 밖일 때만 80%로 계산"
       }
     }
   ]

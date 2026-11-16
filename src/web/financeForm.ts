@@ -85,7 +85,7 @@ export const defaultFinanceForm = (): FinanceFormState => ({
   ...EXAMPLE_ASSUMPTIONS,
 });
 
-const usesExample = (f: FinanceFormState): boolean =>
+export const usesExample = (f: FinanceFormState): boolean =>
   (Object.keys(EXAMPLE_ASSUMPTIONS) as (keyof typeof EXAMPLE_ASSUMPTIONS)[]).every(
     (k) => f[k] === EXAMPLE_ASSUMPTIONS[k],
   );

@@ -26,6 +26,31 @@ export const eligibilityProductSchema = z.object({
   age: z.object({ min: z.number().int(), max: z.number().int() }).optional(),
   /** 임차보증금(전세·월세) 또는 주택가격(매매) 상한. 해당하는 조건 중 가장 큰 값을 쓴다 */
   dealCaps: z.array(z.object({ when, capitalWon: won, otherWon: won })).min(1),
+  /**
+   * 이 상품으로 대출받을 때의 조건(공식 안내). "필요 조건" 계산에 예시 가정 대신 쓴다.
+   * 월세 상품은 LTV·한도 개념이 달라 담지 않는다.
+   */
+  financing: z
+    .object({
+      /** 담보(전세는 보증금)대비 대출 비율(%). 해당하는 조건 중 가장 큰 값. requiresNonCapital 은 수도권이 아닐 때만 적용 */
+      ltvPercent: z
+        .array(
+          z.object({
+            when,
+            percent: z.number().positive().max(100),
+            requiresNonCapital: z.boolean().optional(),
+          }),
+        )
+        .min(1),
+      /** 소득 대비 상환 한도(DTI, %). 있으면 DSR 한도 칸에 쓴다 */
+      dtiPercent: z.number().positive().max(100).optional(),
+      /** 선택 가능한 대출기간(년). 있으면 가장 긴 기간을 쓴다 */
+      termYears: z.array(z.number().int().positive()).optional(),
+      /** 호당 대출 한도. 해당하는 조건 중 가장 큰 값 */
+      capWon: z.array(z.object({ when, capitalWon: won, otherWon: won })).min(1),
+      note: z.string().optional(),
+    })
+    .optional(),
   monthlyRentMaxWon: won.optional(),
   areaMaxM2: z.number().positive().optional(),
   source: z.object({
@@ -335,4 +360,93 @@ export function recommendLoans(
   return out.sort(
     (a, b) => order[a.status] - order[b.status] || (a.rate?.minPercent ?? 99) - (b.rate?.minPercent ?? 99),
   );
+}
+
+export interface PolicyAssumptions {
+  productId: string;
+  ltvPercent: number;
+  /** 상품에 DTI 한도가 있으면 그 값 */
+  dtiPercent?: number;
+  annualRatePercent: number;
+  /** 금리를 어떻게 골랐는지 */
+  rateBasis: 'grid' | 'range-max';
+  termYears?: number;
+  capWon: number;
+  notes: string[];
+}
+
+/** 열 라벨이 "30년" 같은 대출기간인 금리표에서 소득 구간(행)의 해당 기간 금리를 고른다 */
+export function gridRateAtTerm(
+  grid: GridLike,
+  incomeWon: number,
+  dualIncome: boolean,
+  termYears: number,
+): number | undefined {
+  const col = grid.cols.findIndex((c) => c === `${termYears}년`);
+  if (col < 0) return undefined;
+  const rows = grid.rows.filter((r) => dualIncome || !r.label.includes('맞벌이'));
+  const row = rows.find((r) => {
+    const ub = upperBound(r.label);
+    return ub !== undefined && incomeWon <= ub;
+  });
+  return row?.percents[col];
+}
+
+/**
+ * 추천된 정책 대출의 공식 조건으로 "필요 조건" 계산 기준값을 정한다 (순수 함수).
+ * 금리: 소득을 알면 공식 금리표에서(구입 상품은 가장 긴 기간 열, 전세 상품은 보증금 구간 열), 모르면 상품 금리 범위의 상단을 쓴다.
+ * 월세 상품이거나 조건 데이터가 없으면 undefined.
+ */
+export function policyAssumptions(
+  product: EligibilityProduct,
+  profile: LoanProfile,
+  deal: LoanDeal,
+  rate: { grid?: GridLike; range?: { minPercent: number; maxPercent: number } } | undefined,
+): PolicyAssumptions | undefined {
+  const f = product.financing;
+  if (!f) return undefined;
+  const notes: string[] = [];
+
+  const ltvs = f.ltvPercent.filter(
+    (l) => applies(l.when, profile) && !(l.requiresNonCapital && deal.capital !== false),
+  );
+  const ltvPercent = Math.max(...ltvs.map((l) => l.percent));
+  const capCandidates = f.capWon.filter((c) => applies(c.when, profile));
+  const capWon = Math.max(...capCandidates.map((c) => (deal.capital === true ? c.capitalWon : c.otherWon)));
+  if (deal.capital === undefined && f.capWon.some((c) => c.capitalWon !== c.otherWon))
+    notes.push('수도권 여부를 몰라 호당 한도는 수도권 외(낮은 쪽) 기준으로 계산했습니다.');
+  if (f.note) notes.push(f.note);
+
+  const termYears = f.termYears && f.termYears.length > 0 ? Math.max(...f.termYears) : undefined;
+  let annual: number | undefined;
+  let rateBasis: PolicyAssumptions['rateBasis'] = 'grid';
+  if (rate?.grid && profile.incomeWon !== undefined) {
+    annual =
+      termYears !== undefined
+        ? gridRateAtTerm(rate.grid, profile.incomeWon, profile.dualIncome, termYears)
+        : gridRate(
+            rate.grid,
+            profile.incomeWon,
+            profile.dualIncome,
+            deal.kind === 'sale' ? undefined : deal.amountWon,
+          )?.maxPercent;
+  }
+  if (annual === undefined) {
+    if (!rate?.range) return undefined;
+    annual = rate.range.maxPercent;
+    rateBasis = 'range-max';
+    notes.push(
+      '소득을 입력하지 않아(또는 구간을 못 찾아) 금리는 상품 금리 범위의 상단을 썼습니다. 소득을 입력하면 구간별 금리를 씁니다.',
+    );
+  }
+  return {
+    productId: product.productId,
+    ltvPercent,
+    dtiPercent: f.dtiPercent,
+    annualRatePercent: annual,
+    rateBasis,
+    termYears,
+    capWon,
+    notes,
+  };
 }

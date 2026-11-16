@@ -18,7 +18,9 @@ export {
   eligibilitySchema,
   evaluateProduct,
   gridRate,
+  gridRateAtTerm,
   parseKoreanAmount,
+  policyAssumptions,
   recommendLoans,
   upperBound,
 } from './loanRecommend';
@@ -27,6 +29,7 @@ export type {
   EligibilityProduct,
   LoanDeal,
   LoanProfile,
+  PolicyAssumptions,
   RateGuess,
   Recommendation,
   RecommendStatus,
