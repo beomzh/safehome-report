@@ -1,21 +1,17 @@
-import { Analyzer } from '../web/components/Analyzer';
-import { ThemeToggle } from '../web/components/ThemeToggle';
-import { SiteViewer } from '../web/components/SiteViewer';
 import { Disclaimer } from '../web/components/Disclaimer';
+import { PageHeader } from '../web/components/PageHeader';
+import { PreVisit } from '../web/components/PreVisit';
+import { SiteViewer } from '../web/components/SiteViewer';
 
 export default function Home() {
   return (
     <main className="page">
-      <header className="page-header">
-        <ThemeToggle />
-        <h1>계약 전 위험 신호 점검</h1>
-        <p className="muted">
-          분석 계산은 이 브라우저에서만 이루어집니다. 실거래가 조회를 쓸 때만 법정동코드·면적·단지명이
-          공공데이터포털로 전송되며, 성명·금액·재무 정보는 전송되지 않습니다.
-        </p>
-      </header>
+      <PageHeader
+        title="방문 전 점검"
+        lead="매물 링크와 캡처만 넣으면 보러 갈지, 대출이 대략 얼마 나오는지 바로 알려 드립니다. 계산은 이 브라우저에서만 이루어지고, AI 추출·시세 조회 버튼을 누를 때만 필요한 정보가 전송됩니다."
+      />
       <Disclaimer />
-      <Analyzer />
+      <PreVisit />
       <SiteViewer />
     </main>
   );

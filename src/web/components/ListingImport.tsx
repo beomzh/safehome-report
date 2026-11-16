@@ -10,6 +10,8 @@ import { fileToDataUrl, MAX_ATTACH_IMAGES, pickImageFiles } from '../imageAttach
 import { canFrame, normalizeViewUrl, openSiteViewer } from '../siteViewer';
 
 interface Props {
+  /** 읽은 뒤 확인 버튼 없이 바로 입력칸에 적용한다 (방문 전 점검) */
+  autoApply?: boolean;
   setForm: Dispatch<SetStateAction<FormState>>;
   /** 월세 금액을 대출·자금 계획 입력칸에 넣기 위해 사용 */
   setFin: Dispatch<SetStateAction<FinanceFormState>>;
@@ -50,7 +52,7 @@ const PLATFORM_LABEL: Record<UrlHint['platform'], string> = {
  * 링크 내용은 앱이 읽지 않는다(플랫폼 약관·차단). 링크에서는 플랫폼과 매물 번호만 해석하고,
  * 항목은 사용자가 붙여넣은 설명 텍스트에서 추출한다. 추출 결과는 사용자가 확인한 뒤에만 적용한다.
  */
-export function ListingImport({ setForm, setFin }: Props) {
+export function ListingImport({ setForm, setFin, autoApply = false }: Props) {
   const [url, setUrl] = useState('');
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -131,6 +133,7 @@ export function ListingImport({ setForm, setFin }: Props) {
         return;
       }
       setResult({ fields: data.fields, hint: data.urlHint ?? null, truncated: data.truncated ?? false });
+      if (autoApply) applyFields(data.fields);
     } catch {
       setError('서버에 연결하지 못했습니다.');
     } finally {
@@ -139,8 +142,10 @@ export function ListingImport({ setForm, setFin }: Props) {
   };
 
   const apply = () => {
-    if (!result) return;
-    const f = result.fields;
+    if (result) applyFields(result.fields);
+  };
+
+  const applyFields = (f: ListingFields) => {
     // 주소 → 시군구 법정동코드(검증된 표) · 법정동명. 모르면 비워 두고 직접 입력하게 한다
     const region = f.address ? findSigungu(f.address) : null;
     const dong = f.address ? findDongName(f.address) : undefined;
@@ -294,9 +299,13 @@ export function ListingImport({ setForm, setFin }: Props) {
             </>
           )}
           {result?.truncated && <p className="hint">설명이 길어 앞부분만 사용했습니다.</p>}
-          <button type="button" className="btn-primary" onClick={apply} disabled={applied}>
-            {applied ? '입력칸에 적용됨' : '입력칸에 적용'}
-          </button>
+          {autoApply ? (
+            <p className="hint">읽은 내용을 아래 입력칸에 반영했습니다. 틀린 곳은 직접 고치세요.</p>
+          ) : (
+            <button type="button" className="btn-primary" onClick={apply} disabled={applied}>
+              {applied ? '입력칸에 적용됨' : '입력칸에 적용'}
+            </button>
+          )}
           {regionNote && <p className="hint">{regionNote}</p>}
         </div>
       )}
