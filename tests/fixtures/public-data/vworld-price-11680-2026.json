@@ -1,0 +1,53 @@
+{
+  "apartHousingPrices": {
+    "field": [
+      {
+        "stdrYear": "2026",
+        "aphusSeCode": "1",
+        "prvuseAr": "25.35",
+        "ldCode": "1168010300",
+        "ldCodeNm": "서울특별시 강남구 개포동",
+        "spclLandNm": "",
+        "pblntfPc": "398000000",
+        "mnnmSlno": "12",
+        "aphusCode": "20064718",
+        "pnu": "1168010300100120000",
+        "hoNm": "704",
+        "dongNm": "107",
+        "lastUpdtDt": "2026-05-14",
+        "regstrSeCodeNm": "일반",
+        "stdrMt": "01",
+        "regstrSeCode": "1",
+        "floorNm": "7",
+        "aphusNm": "SH대치1단지아파트",
+        "aphusSeCodeNm": "아파트"
+      },
+      {
+        "stdrYear": "2026",
+        "aphusSeCode": "1",
+        "prvuseAr": "25.35",
+        "ldCode": "1168010300",
+        "ldCodeNm": "서울특별시 강남구 개포동",
+        "spclLandNm": "",
+        "pblntfPc": "398000000",
+        "mnnmSlno": "12",
+        "aphusCode": "20064718",
+        "pnu": "1168010300100120000",
+        "hoNm": "704",
+        "dongNm": "107",
+        "lastUpdtDt": "2026-05-14",
+        "regstrSeCodeNm": "일반",
+        "stdrMt": "01",
+        "regstrSeCode": "1",
+        "floorNm": "7",
+        "aphusNm": "SH대치1단지아파트",
+        "aphusSeCodeNm": "아파트"
+      }
+    ],
+    "pageNo": "1",
+    "resultCode": "",
+    "totalCount": "2",
+    "numOfRows": "5",
+    "resultMsg": ""
+  }
+}

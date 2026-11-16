@@ -39,6 +39,7 @@ import { ProfileFields } from './ProfileFields';
 import { LoanCatalog } from './LoanCatalog';
 import { BuildingLookup } from './BuildingLookup';
 import { MarketLookup } from './MarketLookup';
+import { PriceLookup } from './PriceLookup';
 import type { LookupInfo } from './MarketLookup';
 import { MarketNotes } from './MarketNotes';
 import { VerdictPanel } from './VerdictPanel';
@@ -191,6 +192,7 @@ export function Analyzer() {
           <>
             <MarketLookup form={form} setForm={setForm} onInfo={setLookupInfo} />
             <BuildingLookup form={form} setForm={setForm} />
+            <PriceLookup form={form} setFin={setFin} />
           </>
         }
         extra={

@@ -88,6 +88,7 @@ npm run dev
 2. 보증금과 추정 시세(만원 단위)를 입력하고 **분석하기**를 누르면 상세 리포트가 팝업으로 열립니다.
 3. (선택) `.env.example` 을 `.env` 로 복사해 키를 넣으면 기능이 늘어납니다.
    - `PUBLIC_DATA_API_KEY` → "실거래가로 시세 조회"
+   - `VWORLD_API_KEY` → "공시가격 조회"(동·호별, 선택)
    - `LLM_*` → "AI로 항목 추출"
 
 키 없이도 시세와 항목을 직접 입력해 사용할 수 있습니다. 키 발급과 설정은 [docs/operations.md](docs/operations.md), 공공데이터 API는 [docs/public-data-api.md](docs/public-data-api.md)를 보세요.
