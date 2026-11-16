@@ -17,6 +17,21 @@ export const eligibilityProductSchema = z.object({
   requireHomeless: z.boolean(),
   requireHead: z.boolean(),
   requireNewlywed: z.boolean().optional(),
+  /** 혼자 사는 단독 세대주여야 한다 (청년전용 보증부월세대출 등). 혼인 상태를 모르면 확인 필요 */
+  requireSingle: z.boolean().optional(),
+  /**
+   * 미혼 단독세대주 특례(디딤돌: 만 30세 이상 미혼 단독세대주는 대상 주택이 전용 60㎡ 이하·평가액 3억원 이하로 제한되고
+   * 호당 한도가 1.5억원(생애최초 2억원)이다). 혼인 상태가 미혼으로 입력되면 일반 한도·면적 대신 적용한다.
+   */
+  singleHead: z
+    .object({
+      minAge: z.number().int().positive(),
+      areaMaxM2: z.number().positive(),
+      dealCapWon: won,
+      capWon: won,
+      capFirstHomeWon: won,
+    })
+    .optional(),
   requireNewborn: z.boolean().optional(),
   /** 해당하는 조건의 한도 중 가장 큰 값이 소득 상한이다 (예: 신혼이면 신혼 한도) */
   incomeLimits: z.array(z.object({ when, maxWon: won })).min(1),
@@ -80,6 +95,8 @@ export interface LoanProfile {
   householdHead: boolean;
   /** 혼인 7년 이내 또는 3개월 이내 결혼 예정 */
   newlywed: boolean;
+  /** 혼자 사는 미혼 단독 세대. true 미혼, false 기혼·신혼, 모르면 undefined */
+  single?: boolean;
   /** 대출 접수일 기준 2년 내 출산(입양)한 자녀가 있음 */
   newbornWithin2y: boolean;
   minorChildren: number;
@@ -222,6 +239,33 @@ export function evaluateProduct(
         ? '대출 접수일 기준 2년 내 출산(입양)으로 입력함'
         : '대출 접수일 기준 2년 내 출산한 가구 대상입니다',
     );
+  if (product.requireSingle) {
+    if (profile.single === undefined)
+      add('단독세대주(혼인 상태)', 'unknown', '혼자 사는 단독 세대주 요건 — 혼인 상태를 입력하면 확인합니다');
+    else
+      add(
+        '단독세대주(혼인 상태)',
+        profile.single ? 'ok' : 'fail',
+        profile.single
+          ? '미혼 단독 세대로 입력함'
+          : '혼자 사는 단독 세대주만 대상입니다 (기혼·신혼은 해당 안 됨)',
+      );
+  }
+  const single = product.singleHead && profile.single === true ? product.singleHead : undefined;
+  if (single) {
+    if (profile.age === undefined)
+      add(
+        '나이(미혼 단독세대주)',
+        'unknown',
+        `미혼 단독세대주는 만 ${single.minAge}세 이상 요건 — 나이를 입력하면 확인합니다`,
+      );
+    else
+      add(
+        '나이(미혼 단독세대주)',
+        profile.age >= single.minAge ? 'ok' : 'fail',
+        `미혼 단독세대주는 만 ${single.minAge}세 이상, 입력 만 ${profile.age}세`,
+      );
+  }
   if (product.age) {
     const { min, max } = product.age;
     if (profile.age === undefined)
@@ -237,7 +281,11 @@ export function evaluateProduct(
     ...product.incomeLimits.filter((l) => applies(l.when, profile)).map((l) => l.maxWon),
   );
   if (profile.incomeWon === undefined) {
-    add('소득', 'unknown', `부부합산 연소득 ${fmt(limit)} 이하 요건 — 연소득을 입력하면 확인합니다`);
+    add(
+      '소득',
+      'unknown',
+      `${profile.single ? '연소득' : '부부합산 연소득'} ${fmt(limit)} 이하 요건 — 연소득을 입력하면 확인합니다`,
+    );
   } else if (profile.incomeWon <= limit) {
     add('소득', 'ok', `연소득 ${fmt(profile.incomeWon)}은 상한 ${fmt(limit)} 이하`);
   } else if (product.singleEarnerExceptionWon !== undefined && profile.newlywed && profile.dualIncome) {
@@ -265,7 +313,10 @@ export function evaluateProduct(
     );
 
   // 보증금·주택가격 상한
-  const caps = product.dealCaps.filter((c) => applies(c.when, profile));
+  // 미혼 단독세대주 특례가 있으면 일반 상한 대신 그 주택가격 상한(지역 무관)을 쓴다
+  const caps = single
+    ? [{ when: 'always' as const, capitalWon: single.dealCapWon, otherWon: single.dealCapWon }]
+    : product.dealCaps.filter((c) => applies(c.when, profile));
   const capitalCap = Math.max(...caps.map((c) => c.capitalWon));
   const otherCap = Math.max(...caps.map((c) => c.otherWon));
   const dealLabel = deal.kind === 'sale' ? '주택가격' : '임차보증금';
@@ -307,15 +358,11 @@ export function evaluateProduct(
         `월세 ${fmt(deal.monthlyRentWon)}, 상한 ${fmt(product.monthlyRentMaxWon)}`,
       );
   }
-  if (product.areaMaxM2 !== undefined) {
+  const areaMax = single ? single.areaMaxM2 : product.areaMaxM2;
+  if (areaMax !== undefined) {
     if (deal.areaM2 === undefined)
-      add('전용면적', 'unknown', `전용 ${product.areaMaxM2}㎡ 이하 요건 — 전용면적을 입력하면 확인합니다`);
-    else
-      add(
-        '전용면적',
-        deal.areaM2 <= product.areaMaxM2 ? 'ok' : 'fail',
-        `전용 ${deal.areaM2}㎡, 상한 ${product.areaMaxM2}㎡`,
-      );
+      add('전용면적', 'unknown', `전용 ${areaMax}㎡ 이하 요건 — 전용면적을 입력하면 확인합니다`);
+    else add('전용면적', deal.areaM2 <= areaMax ? 'ok' : 'fail', `전용 ${deal.areaM2}㎡, 상한 ${areaMax}㎡`);
   }
 
   const status: RecommendStatus = checks.some((c) => c.result === 'fail')
@@ -411,9 +458,18 @@ export function policyAssumptions(
     (l) => applies(l.when, profile) && !(l.requiresNonCapital && deal.capital !== false),
   );
   const ltvPercent = Math.max(...ltvs.map((l) => l.percent));
+  const singleHead = product.singleHead && profile.single === true ? product.singleHead : undefined;
   const capCandidates = f.capWon.filter((c) => applies(c.when, profile));
-  const capWon = Math.max(...capCandidates.map((c) => (deal.capital === true ? c.capitalWon : c.otherWon)));
-  if (deal.capital === undefined && f.capWon.some((c) => c.capitalWon !== c.otherWon))
+  const capWon = singleHead
+    ? profile.firstHome
+      ? singleHead.capFirstHomeWon
+      : singleHead.capWon
+    : Math.max(...capCandidates.map((c) => (deal.capital === true ? c.capitalWon : c.otherWon)));
+  if (singleHead)
+    notes.push(
+      '미혼 단독세대주 특례(대상 주택 전용 60㎡·평가액 3억원 이하, 호당 한도 1.5억원·생애최초 2억원)를 적용했습니다.',
+    );
+  if (!singleHead && deal.capital === undefined && f.capWon.some((c) => c.capitalWon !== c.otherWon))
     notes.push('수도권 여부를 몰라 호당 한도는 수도권 외(낮은 쪽) 기준으로 계산했습니다.');
   if (f.note) notes.push(f.note);
 

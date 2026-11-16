@@ -129,6 +129,15 @@ export function diffEligibility(product, text) {
     need('보증금·주택가격 상한(그 외)', c.otherWon);
   }
   if (product.monthlyRentMaxWon) need('월세 상한', product.monthlyRentMaxWon);
+  if (product.singleHead) {
+    need('미혼 단독세대주 주택가격 상한', product.singleHead.dealCapWon);
+    need('미혼 단독세대주 호당 한도', product.singleHead.capWon);
+    need('미혼 단독세대주 생애최초 호당 한도', product.singleHead.capFirstHomeWon);
+    if (!new RegExp(`${product.singleHead.areaMaxM2}\\s*㎡`).test(text))
+      missing.push(`미혼 단독세대주 전용면적 ${product.singleHead.areaMaxM2}㎡`);
+    if (!new RegExp(`${product.singleHead.minAge}\\s*세`).test(text))
+      missing.push(`미혼 단독세대주 나이 ${product.singleHead.minAge}세`);
+  }
   if (product.areaMaxM2 && !new RegExp(`${product.areaMaxM2}\\s*㎡`).test(text))
     missing.push(`전용면적 ${product.areaMaxM2}㎡`);
   if (product.age) {

@@ -2,14 +2,15 @@ import type { LoanDeal, LoanProfile } from '../core';
 import { parseManwon } from './form';
 import type { Kind } from './form';
 
-/** 대출 추천에 쓰는 "내 상황" 입력. 연소득은 대출·자금 계획의 연소득 칸(fin.annualIncomeManwon)을 같이 쓴다 */
+/** 대출 추천에 쓰는 "내 상황" 입력. 연소득·보유 자기자금은 대출·자금 계획의 칸(fin.annualIncomeManwon·assetsManwon)을 같이 쓴다 */
 export interface ProfileState {
   /** 순자산 = 자산 − 부채 (만원) */
   netAssetManwon: string;
   age: string;
   homeless: boolean;
   householdHead: boolean;
-  newlywed: boolean;
+  /** 혼인 상태: 미혼(혼자 사는 단독 세대), 기혼(신혼 아님), 신혼(혼인 7년 이내·3개월 내 결혼 예정). 비우면 모름 */
+  marital: '' | 'single' | 'married' | 'newlywed';
   newbornWithin2y: boolean;
   minorChildren: '0' | '1' | '2' | '3';
   firstHome: boolean;
@@ -22,7 +23,7 @@ export const defaultProfile = (): ProfileState => ({
   age: '',
   homeless: true,
   householdHead: true,
-  newlywed: false,
+  marital: '',
   newbornWithin2y: false,
   minorChildren: '0',
   firstHome: false,
@@ -43,11 +44,13 @@ export function toLoanProfile(p: ProfileState, incomeManwon: string): LoanProfil
     age: age !== undefined && age >= 0 && age <= 120 ? age : undefined,
     homeless: p.homeless,
     householdHead: p.householdHead,
-    newlywed: p.newlywed,
+    newlywed: p.marital === 'newlywed',
+    single: p.marital === '' ? undefined : p.marital === 'single',
     newbornWithin2y: p.newbornWithin2y,
     minorChildren: Number(p.minorChildren),
     firstHome: p.firstHome,
-    dualIncome: p.dualIncome,
+    // 미혼이면 부부합산·맞벌이 개념이 없다
+    dualIncome: p.marital === 'single' ? false : p.dualIncome,
   };
 }
 

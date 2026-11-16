@@ -333,7 +333,7 @@ export function buildFinancePlan(
   const assumptionNotes = form.aiFields.length > 0 ? [aiAssumptionNote(form.aiFields)] : [];
   if (hasAssets !== hasIncome) {
     assumptionNotes.push(
-      '보유 자산과 연소득을 둘 다 입력해야 "내 상황" 판정(자금 여력)을 계산합니다. 지금은 필요 조건만 계산했습니다.',
+      '"내 상황"에 보유 자기자금과 연소득을 둘 다 입력해야 자금 여력 판정을 계산합니다. 지금은 필요 조건만 계산했습니다.',
     );
   }
   if (usesExample(form) && form.aiFields.length === 0) {

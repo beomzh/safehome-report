@@ -73,8 +73,7 @@ export function FinanceFields({ fin, setFin, kind, amountManwon, address, firstH
 
           <fieldset>
             <legend>내 재무 정보 (선택 — 비우면 "필요 조건"만 계산)</legend>
-            {text('assetsManwon', '보유 자산·자기자금 (만원, 선택)', '예: 20,000')}
-            <p className="hint">연소득은 맨 위 "내 상황"에 입력한 값을 씁니다.</p>
+            <p className="hint">보유 자기자금과 연소득은 맨 위 "내 상황"에 입력한 값을 씁니다.</p>
             {text('existingAnnualDebtManwon', '기존 대출 연 원리금 상환액 (만원, 없으면 비움)', '예: 600')}
           </fieldset>
 

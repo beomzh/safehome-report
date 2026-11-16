@@ -14,6 +14,8 @@ export interface LookupInfo {
   similar: NonNullable<LookupResponse['similar']>;
   message: { tone: 'ok' | 'warn' | 'error'; text: string } | null;
   rent: RentState | null;
+  /** 대안 단지 검색에 붙일 지역 이름 (예: 서울특별시 동대문구) */
+  region?: string;
   /** 같은 조건 매매 시세 중앙값 (원) */
   saleWon?: number;
   kind: FormState['kind'];
@@ -138,6 +140,7 @@ export function MarketLookup({ form, setForm, onInfo }: Props) {
   useEffect(() => {
     const dep = parseManwon(form.amountManwon);
     onInfo?.({
+      region: regionName,
       similar,
       message,
       rent,
@@ -154,6 +157,7 @@ export function MarketLookup({ form, setForm, onInfo }: Props) {
 
   // 주소·지역을 적으면 법정동코드와 법정동명을 자동으로 채운다 (못 찾으면 직접 입력)
   const region = address.trim() ? findSigungu(address) : null;
+  const regionName = region?.ok ? region.match.name : address.trim();
   useEffect(() => {
     if (!region?.ok) return;
     const dong = findDongName(address);
@@ -256,7 +260,7 @@ export function MarketLookup({ form, setForm, onInfo }: Props) {
       {similar.length > 0 && (
         <div className="similar">
           <h4>같은 지역에서 비슷한 면적으로 거래된 다른 단지 (참고)</h4>
-          <SimilarList similar={similar} />
+          <SimilarList similar={similar} region={regionName} />
           <p className="hint">
             판매 중인 매물이 아니라 최근 실제 거래 사례입니다. 대안 단지를 찾는 출발점으로만 쓰고, 지금 나온
             매물은 위의 매물 사이트에서 확인하세요.
